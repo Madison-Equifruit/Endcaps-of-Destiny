@@ -351,7 +351,7 @@ function clearJP() { for(const k in jp) delete jp[k]; }
 
 // ── STATE ────────────────────────────────────────────────────
 let S = {};
-let LEADERBOARD = []; // persists across game resets
+let LEADERBOARD = JSON.parse(localStorage.getItem("bb_leaderboard") || "[]");
 function initState() {
   S = {
     screen:"title", charIdx:0, char:null,
@@ -439,6 +439,7 @@ function submitName() {
   LEADERBOARD.push({name, score: Math.floor(S.score)});
   LEADERBOARD.sort((a,b)=>b.score-a.score);
   if (LEADERBOARD.length>10) LEADERBOARD=LEADERBOARD.slice(0,10);
+  localStorage.setItem("bb_leaderboard", JSON.stringify(LEADERBOARD));
   S.screen = "leaderboard";
   clearJP(); // prevent the Enter keypress from instantly skipping the leaderboard
 }
