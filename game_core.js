@@ -861,8 +861,10 @@ function drawGameplay() {
   const playerBottomY = CFG.laneY[S.lane] + S.jumpY + bob;
 
   for (let layer = 0; layer < 3; layer++) {
-    // Objects in this lane
-    S.objects.filter(o => o.lane === layer).forEach(o => {
+    // Objects in this lane — plain for loop avoids per-frame array allocation
+    for (let i = 0; i < S.objects.length; i++) {
+      const o = S.objects[i];
+      if (o.lane !== layer) continue;
       const bottomY = CFG.laneY[o.lane] - (o.floatOffset || 0);
       drawImgBottom(o.imgName, o.x, bottomY, o.h);
       if (o.airOnly && !o.done) {
@@ -872,12 +874,12 @@ function drawGameplay() {
         ctx.lineWidth = 2;
         ctx.strokeRect(o.x - w/2, bottomY - o.h, w, o.h);
       }
-    });
+    }
 
     // Player drawn within their lane so depth is correct
     if (S.lane === layer && visible) {
-      if(S.glow>0){ctx.shadowColor="#00FF88";ctx.shadowBlur=24;}
-      if(S.hit>0){ctx.shadowColor="#FF0000";ctx.shadowBlur=30;}
+      if(S.glow>0){ctx.shadowColor="#00FF88";ctx.shadowBlur=12;}
+      if(S.hit>0){ctx.shadowColor="#FF0000";ctx.shadowBlur=14;}
       if(ch.sheet && imgs[ch.sheet] && imgs[ch.sheet].complete) {
         const frameRate = 12;
         const frameIdx = Math.floor(S.frame / frameRate) % ch.frames.length;
@@ -1103,7 +1105,7 @@ function drawLevel1Complete() {
   for(let y=0;y<CFG.H;y+=4){ctx.fillStyle="rgba(0,0,0,0.15)";ctx.fillRect(0,y,CFG.W,2);}
 
   const pulse = 0.7 + 0.3*Math.sin(Date.now()*0.004);
-  ctx.shadowColor="#00FF88"; ctx.shadowBlur=50*pulse;
+  ctx.shadowColor="#00FF88"; ctx.shadowBlur=16*pulse;
   txt("LEVEL 1", CFG.W/2, CFG.H/2-50, 'bold 80px "ClaudiaShouter"', "#FFE000", "center");
   ctx.shadowBlur=0; ctx.shadowColor="transparent";
   txt("COMPLETE!", CFG.W/2, CFG.H/2+30, 'bold 64px "ClaudiaShouter"', "#00FF88", "center");
@@ -1118,7 +1120,7 @@ function drawLevel2Complete() {
   for(let y=0;y<CFG.H;y+=4){ctx.fillStyle="rgba(0,0,0,0.15)";ctx.fillRect(0,y,CFG.W,2);}
 
   const pulse = 0.7 + 0.3*Math.sin(Date.now()*0.004);
-  ctx.shadowColor="#FFE000"; ctx.shadowBlur=50*pulse;
+  ctx.shadowColor="#FFE000"; ctx.shadowBlur=16*pulse;
   txt("LEVEL 2", CFG.W/2, CFG.H/2-50, 'bold 80px "ClaudiaShouter"', "#FFE000", "center");
   ctx.shadowBlur=0; ctx.shadowColor="transparent";
   txt("COMPLETE!", CFG.W/2, CFG.H/2+30, 'bold 64px "ClaudiaShouter"', "#00FF88", "center");
@@ -1142,7 +1144,7 @@ function drawLevel2Splash() {
 
   // Pulsing glow
   const pulse = 0.7 + 0.3 * Math.sin(Date.now()*0.004);
-  ctx.shadowColor="#FFE000"; ctx.shadowBlur=50*pulse;
+  ctx.shadowColor="#FFE000"; ctx.shadowBlur=16*pulse;
   txt("LEVEL 2", CFG.W/2, CFG.H/2-20, 'bold 96px "ClaudiaShouter"', "#FFE000", "center");
   ctx.shadowBlur=0; ctx.shadowColor="transparent";
 
@@ -1163,7 +1165,7 @@ function drawLevel3Splash() {
   ctx.fillStyle="rgba(0,0,0,0.6)"; ctx.fillRect(0,0,CFG.W,CFG.H);
 
   const pulse = 0.7 + 0.3*Math.sin(Date.now()*0.004);
-  ctx.shadowColor="#FF4444"; ctx.shadowBlur=50*pulse;
+  ctx.shadowColor="#FF4444"; ctx.shadowBlur=16*pulse;
   txt("LEVEL 3", CFG.W/2, CFG.H/2-20, 'bold 96px "ClaudiaShouter"', "#FFE000", "center");
   ctx.shadowBlur=0; ctx.shadowColor="transparent";
   txt("GROCERY HEAD OFFICE", CFG.W/2, CFG.H/2+55, 'bold 24px "ClaudiaShouter"', "#FFF", "center");
@@ -1176,7 +1178,7 @@ function drawLevel3Complete() {
   for(let y=0;y<CFG.H;y+=4){ctx.fillStyle="rgba(0,0,0,0.15)";ctx.fillRect(0,y,CFG.W,2);}
 
   const pulse = 0.7 + 0.3*Math.sin(Date.now()*0.004);
-  ctx.shadowColor="#FFE000"; ctx.shadowBlur=50*pulse;
+  ctx.shadowColor="#FFE000"; ctx.shadowBlur=16*pulse;
   txt("LEVEL 3", CFG.W/2, CFG.H/2-50, 'bold 80px "ClaudiaShouter"', "#FFE000", "center");
   ctx.shadowBlur=0; ctx.shadowColor="transparent";
   txt("COMPLETE!", CFG.W/2, CFG.H/2+30, 'bold 64px "ClaudiaShouter"', "#00FF88", "center");
