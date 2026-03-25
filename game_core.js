@@ -186,11 +186,25 @@ window.addEventListener("resize", resize);
 
 // ── IMAGE LOADING ────────────────────────────────────────────
 const imgs = {};
+const bgCache = {}; // pre-scaled offscreen canvases for background images
 let loaded = 0;
 const total = Object.keys(ASSETS).length;
 Object.entries(ASSETS).forEach(([name, src]) => {
   const img = new Image();
-  img.onload = img.onerror = () => { loaded++; };
+  img.onload = () => {
+    loaded++;
+    // Pre-render background images to an offscreen canvas at game resolution
+    // so drawGameplay never has to scale a 6-8 MB PNG every frame
+    if (name.includes('Background') || name.includes('Head_Office')) {
+      const sc = CFG.H / img.naturalHeight;
+      const bw = Math.ceil(img.naturalWidth * sc);
+      const oc = document.createElement('canvas');
+      oc.width = bw; oc.height = CFG.H;
+      oc.getContext('2d').drawImage(img, 0, 0, bw, CFG.H);
+      bgCache[name] = oc;
+    }
+  };
+  img.onerror = () => { loaded++; };
   img.src = src;
   imgs[name] = img;
 });
@@ -808,9 +822,16 @@ function drawInstrAvoid() {
 }
 
 function drawGameplay() {
-  // Scrolling background — round to integer pixels to prevent blur
-  const bgI=imgs[S.bg||"Level_1_Background_scroll.png"];
-  if(bgI&&bgI.naturalWidth>0){
+  // Scrolling background — use pre-scaled offscreen canvas if available
+  const bgName = S.bg||"Level_1_Background_scroll.png";
+  const bgSrc = bgCache[bgName];
+  const bgI = imgs[bgName];
+  if(bgSrc){
+    const bw = bgSrc.width;
+    let bx = Math.round(S.bgX);
+    while(bx<CFG.W){ctx.drawImage(bgSrc,bx,0,bw,CFG.H);bx+=bw;}
+    if(S.bgX<=-bw) S.bgX+=bw;
+  } else if(bgI&&bgI.naturalWidth>0){
     const sc=CFG.H/bgI.naturalHeight;
     const bw=bgI.naturalWidth*sc;
     let bx=Math.round(S.bgX);
@@ -1344,7 +1365,12 @@ canvas.addEventListener("click",e=>{
 });
 
 // ── MAIN LOOP ─────────────────────────────────────────────────
-function loop(){
+let _lastFrameTime = 0;
+const _FRAME_MS = 1000 / 60; // cap at 60fps
+
+function loop(now = 0){
+  if (now - _lastFrameTime < _FRAME_MS - 1) { requestAnimationFrame(loop); return; }
+  _lastFrameTime = now;
   pollGamepad();
   handleInput();
   if(S.screen==="play") update();
@@ -1386,4 +1412,4 @@ function loop(){
   clearJP();
   requestAnimationFrame(loop);
 }
-loop();
+requestAnimationFrame(loop);
