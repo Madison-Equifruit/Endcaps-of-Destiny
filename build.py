@@ -55,7 +55,7 @@ collect_b64  = b64_audio("collect.wav")
 powerup_b64  = b64_audio("powerup.wav")
 hit_b64      = b64_audio("hit.wav")
 jump_b64     = b64_audio("jump.wav")
-music_b64    = b64_audio("music.mp3")
+music_b64    = b64_audio("music.wav")
 
 # ── VIDEOS ────────────────────────────────────────────────────
 print("  Loading videos...")
@@ -72,6 +72,10 @@ cs3_assassin    = b64_video("cutscene3_assassin.mp4")
 cs3_bulldozer   = b64_video("cutscene3_bulldozer.mp4")
 cs3_curious     = b64_video("cutscene3_curious.mp4")
 cs3_nerd        = b64_video("cutscene3_nerd.mp4")
+end_assassin    = b64_video("ending_assassin.mp4")
+end_bulldozer   = b64_video("ending_bulldozer.mp4")
+end_curious     = b64_video("ending_curious.mp4")
+end_nerd        = b64_video("ending_nerd.mp4")
 
 # ── IMAGES ────────────────────────────────────────────────────
 print("  Loading images...")
@@ -111,7 +115,7 @@ assets_js = "const ASSETS = {\n" + ",\n".join(asset_lines) + "\n};"
 
 # ── GAME CORE ─────────────────────────────────────────────────
 print("  Loading game_core.js...")
-with open(GAME_CORE, "r") as f:
+with open(GAME_CORE, "r", encoding="utf-8", errors="ignore") as f:
     game_js = f.read()
 
 # ── ASSEMBLE HTML ─────────────────────────────────────────────
@@ -156,6 +160,10 @@ const CUTSCENE3_ASSASSIN_B64  = "{cs3_assassin}";
 const CUTSCENE3_BULLDOZER_B64 = "{cs3_bulldozer}";
 const CUTSCENE3_CURIOUS_B64   = "{cs3_curious}";
 const CUTSCENE3_NERD_B64      = "{cs3_nerd}";
+const ENDING_ASSASSIN_B64     = "{end_assassin}";
+const ENDING_BULLDOZER_B64    = "{end_bulldozer}";
+const ENDING_CURIOUS_B64      = "{end_curious}";
+const ENDING_NERD_B64         = "{end_nerd}";
 const MUSIC_B64 = "{music_b64}";
 {assets_js}
 {game_js}
@@ -164,7 +172,7 @@ const MUSIC_B64 = "{music_b64}";
 </html>"""
 
 out_path = os.path.join(OUTPUT_DIR, "index.html")
-with open(out_path, "w") as f:
+with open(out_path, "w", encoding="utf-8") as f:
     f.write(html)
 
 size_mb = os.path.getsize(out_path) / 1024 / 1024

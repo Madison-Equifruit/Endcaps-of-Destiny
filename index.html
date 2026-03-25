@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Banana Badass: Endcaps of Destiny</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; background:#000; overflow:hidden; }
+body { display:flex; justify-content:center; align-items:center; }
+canvas { display:block; image-rendering:pixelated; image-rendering:crisp-edges; cursor:pointer; }
+:fullscreen body { cursor:none; }
+:-webkit-full-screen body { cursor:none; }
+@font-face {
+  font-family: "ClaudiaShouter";
+  src: url("assets/fonts/ClaudiaShouter-Black.otf") format("opentype");
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+document.fonts.load('20px "ClaudiaShouter"');
+
+// ── AUDIO SFX ─────────────────────────────────────────────────
+const SFX_COLLECT = "assets/audio/collect.wav";
+const SFX_POWERUP = "assets/audio/powerup.wav";
+const SFX_HIT     = "assets/audio/hit.wav";
+const SFX_JUMP    = "assets/audio/jump.wav";
+
+// ── BACKGROUND MUSIC ──────────────────────────────────────────
+const MUSIC_SRC = "assets/audio/music.mp4";
+
+// ── VIDEOS ────────────────────────────────────────────────────
+const INTRO_VIDEO_SRC         = "assets/video/intro.mp4";
+const CUTSCENE_ASSASSIN_SRC   = "assets/video/cutscene_assassin.mp4";
+const CUTSCENE_BULLDOZER_SRC  = "assets/video/cutscene_bulldozer.mp4";
+const CUTSCENE_CURIOUS_SRC    = "assets/video/cutscene_curious.mp4";
+const CUTSCENE_NERD_SRC       = "assets/video/cutscene_nerd.mp4";
+const CUTSCENE2_ASSASSIN_SRC  = "assets/video/cutscene2_assassin.mp4";
+const CUTSCENE2_BULLDOZER_SRC = "assets/video/cutscene2_bulldozer.mp4";
+const CUTSCENE2_CURIOUS_SRC   = "assets/video/cutscene2_curious.mp4";
+const CUTSCENE2_NERD_SRC      = "assets/video/cutscene2_nerd.mp4";
+const CUTSCENE3_ASSASSIN_SRC  = "assets/video/cutscene3_assassin.mp4";
+const CUTSCENE3_BULLDOZER_SRC = "assets/video/cutscene3_bulldozer.mp4";
+const CUTSCENE3_CURIOUS_SRC   = "assets/video/cutscene3_curious.mp4";
+const CUTSCENE3_NERD_SRC      = "assets/video/cutscene3_nerd.mp4";
+const ENDING_ASSASSIN_SRC     = "assets/video/ending_assassin.mp4";
+const ENDING_BULLDOZER_SRC    = "assets/video/ending_bulldozer.mp4";
+const ENDING_CURIOUS_SRC      = "assets/video/ending_curious.mp4";
+const ENDING_NERD_SRC         = "assets/video/ending_nerd.mp4";
+
+// ── IMAGES ────────────────────────────────────────────────────
+const ASSETS = {
+  "Level_1_Background_scroll.png":      "assets/images/Level_1_Background_scroll.png",
+  "Level_2_Background_scroll.png":      "assets/images/Level_2_Background_scroll.png",
+  "Level_3_Head_Office.png":            "assets/images/Level_3_Head_Office.png",
+  "Cover_Image.png":                    "assets/images/Cover_Image.png",
+  "Banana_Badass_Assassin_Still.png":   "assets/images/Banana_Badass_Assassin_Still.png",
+  "Banana_Badass_Bulldozer_Still.png":  "assets/images/Banana_Badass_Bulldozer_Still.png",
+  "Banana_Badass_Curious_Still.png":    "assets/images/Banana_Badass_Curious_Still.png",
+  "Banana_Badass_Nerd_Still.png":       "assets/images/Banana_Badass_Nerd_Still.png",
+  "Banana_Badass_Assassin_Select.png":  "assets/images/Banana_Badass_Assassin_Select.png",
+  "Banana_Badass_Bulldozer_Select.png": "assets/images/Banana_Badass_Bulldozer_Select.png",
+  "Banana_Badass_Curious_Select.png":   "assets/images/Banana_Badass_Curious_Select.png",
+  "Banana_Badass_Nerd_Select.png":      "assets/images/Banana_Badass_Nerd_Select.png",
+  "Banana_Badass_Nerd_Running.png":     "assets/images/Banana_Badass_Nerd_Running.png",
+  "Nerd_Sprite_Sheet.png":              "assets/images/Nerd_Sprite_Sheet.png",
+  "Claudia_Power_Up.png":               "assets/images/Claudia_Power_Up.png",
+  "Conventional_Case.png":              "assets/images/Conventional_Case.png",
+  "Organic_Case.png":                   "assets/images/Organic_Case.png",
+  "Bananasplain.png":                   "assets/images/Bananasplain.png",
+  "Detractor_Lady.png":                 "assets/images/Detractor_Lady.png",
+  "Greenwasher.png":                    "assets/images/Greenwasher.png",
+  "Money_Gun.png":                      "assets/images/Money_Gun.png",
+  "Legal_Jail.png":                     "assets/images/Legal_Jail.png",
+  "Fake_Cert.png":                      "assets/images/Fake_Cert.png",
+  "Apple_stand.png":                    "assets/images/Apple_stand.png",
+  "cruiser_table.png":                  "assets/images/cruiser_table.png",
+  "messy_desk.png":                     "assets/images/messy_desk.png",
+};
+</script>
+<script src="game_core.js"></script>
+</body>
+</html>
