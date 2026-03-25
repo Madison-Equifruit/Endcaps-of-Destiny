@@ -44,11 +44,9 @@ const CFG = {
   obstacles: [
     {img:"Bananasplain.png",   name:"Bananasplainer",                       penalty:30},
     {img:"Detractor_Lady.png", name:'"We\'ve always done\nit this way" lady', penalty:30, h:65},
-    {img:"Greenwasher.png",    name:"Greenwashing",                         penalty:40, h:65},
     {img:"Money_Gun.png",      name:"80's Pricing\nStrategy",                penalty:35, h:60},
     {img:"Legal_Jail.png",     name:"Corporate Legal\nDept. Jail",            penalty:50},
-    {img:"Fake_Cert.png",      name:"Fake\nCertifications",                  penalty:25, h:60},
-    {img:"Apple_stand.png",    name:"Cheap Apple\nEndcap",                    penalty:30, h:100, hasFloatingCase:true, landable:true},
+    {img:"Apple_stand.png",    name:"Cheap Apple\nEndcap",                    penalty:30, h:100, hasFloatingCase:true, landable:true, level2img:"cruiser_table.png", level3img:"messy_desk.png"},
   ]
 };
 
@@ -72,6 +70,38 @@ document.addEventListener("click",   () => { if(!fsTriggered){fsTriggered=true;g
 // ── GAMEPAD / JOYSTICK SUPPORT ────────────────────────────────
 const gpState = {};
 
+// ── GAMEPAD NAME-ENTRY GRID ────────────────────────────────────
+// Classic arcade-style letter picker used on the name entry screen.
+// Row 0: A-M  |  Row 1: N-Z  |  Row 2: SPC / DEL / DONE
+const GP_GRID = [
+  ['A','B','C','D','E','F','G','H','I','J','K','L','M'],
+  ['N','O','P','Q','R','S','T','U','V','W','X','Y','Z'],
+  ['SPC','DEL','DONE']
+];
+
+function gpNameMove(dr, dc) {
+  if (!S || S.screen !== "name") return;
+  if (S.gpNameRow === undefined) { S.gpNameRow = 0; S.gpNameCol = 0; }
+  const newRow = ((S.gpNameRow + dr) + GP_GRID.length) % GP_GRID.length;
+  S.gpNameRow = newRow;
+  // Clamp column to the new row's length, then apply left/right delta
+  S.gpNameCol = Math.min(S.gpNameCol, GP_GRID[newRow].length - 1);
+  if (dc !== 0) {
+    const cols = GP_GRID[newRow].length;
+    S.gpNameCol = ((S.gpNameCol + dc) + cols) % cols;
+  }
+}
+
+function gpNamePick() {
+  if (!S || S.screen !== "name") return;
+  if (S.gpNameRow === undefined) { S.gpNameRow = 0; S.gpNameCol = 0; }
+  const ch = GP_GRID[S.gpNameRow][S.gpNameCol];
+  if      (ch === 'SPC')  { if (S.nameInput.length < 12) S.nameInput += ' '; }
+  else if (ch === 'DEL')  { S.nameInput = S.nameInput.slice(0, -1); }
+  else if (ch === 'DONE') { submitName(); }
+  else if (S.nameInput.length < 12) { S.nameInput += ch; }
+}
+
 function pollGamepad() {
   try { if (!navigator.getGamepads) return; } catch(e) { return; }
   let gamepads;
@@ -80,44 +110,69 @@ function pollGamepad() {
     if (!gp || !gp.buttons || !gp.axes) continue;
     if (!gpState[gp.index]) gpState[gp.index] = { buttons: [], axes: [0,0,0,0] };
     const prev = gpState[gp.index];
+    const onName = S && S.screen === "name";
 
-    // Buttons
+    // ── Buttons ───────────────────────────────────────────────
     gp.buttons.forEach((btn, i) => {
       const pressed = !!(btn && (btn.pressed || btn.value > 0.5));
       const wasPressed = prev.buttons[i] || false;
       if (pressed && !wasPressed) {
-        if (i === 0) {
-          // Button A: jump during gameplay, confirm on menus
-          if (S && S.screen === "play") jp["Space"] = true;
-          else { jp["Enter"] = true; if (S && S.screen === "name") submitName(); }
+        tryStartMusic(); // unlock audio context on first button press
+        if (onName) {
+          // Name-entry screen: D-pad navigates the letter grid
+          if      (i === 12) gpNameMove(-1,  0);  // up
+          else if (i === 13) gpNameMove( 1,  0);  // down
+          else if (i === 14) gpNameMove( 0, -1);  // left
+          else if (i === 15) gpNameMove( 0,  1);  // right
+          else if (i === 0)  gpNamePick();         // A: select letter
+          else if (i === 1)  { S.nameInput = S.nameInput.slice(0, -1); } // B: delete
+          else if ([2,3,8,9,11].includes(i)) submitName(); // Start/Select: submit
+        } else {
+          // All other screens
+          if (i === 0 || i === 1) {
+            // Buttons 0 & 1 cover A and B across different NES USB controller mappings
+            if (S && S.screen === "play") jp["Space"] = true;
+            else jp["Enter"] = true;
+          }
+          if ([2,3,8,9,11].includes(i)) jp["Enter"] = true; // Select, Start, shoulders
+          if (i === 12) jp["ArrowUp"]    = true; // D-pad up
+          if (i === 13) jp["ArrowDown"]  = true; // D-pad down
+          if (i === 14) jp["ArrowLeft"]  = true; // D-pad left
+          if (i === 15) jp["ArrowRight"] = true; // D-pad right
         }
-        if ([1,2,3,8,9,11].includes(i)) {
-          jp["Enter"] = true;
-          if (S && S.screen === "name") submitName();
-        }
-        if (i === 12) jp["ArrowUp"]    = true; // D-pad up = jump
-        if (i === 13) jp["ArrowDown"]  = true; // D-pad down (unused in play)
-        if (i === 14) jp["ArrowLeft"]  = true; // D-pad left = lane up
-        if (i === 15) jp["ArrowRight"] = true; // D-pad right = lane down
       }
       prev.buttons[i] = pressed;
     });
 
-    // Left analog stick with deadzone
+    // ── D-pad / analog stick via axes ─────────────────────────
     const dead = 0.4;
     const ax = gp.axes[0] || 0;
     const ay = gp.axes[1] || 0;
-    if (ay < -dead && (prev.axes[1]||0) >= -dead) jp["ArrowUp"]    = true;
-    if (ay >  dead && (prev.axes[1]||0) <=  dead) jp["ArrowDown"]  = true;
-    if (ax < -dead && (prev.axes[0]||0) >= -dead) jp["ArrowLeft"]  = true;
-    if (ax >  dead && (prev.axes[0]||0) <=  dead) jp["ArrowRight"] = true;
+    if (onName) {
+      // Route axis input to letter-grid navigation on name screen
+      if (ay < -dead && (prev.axes[1]||0) >= -dead) gpNameMove(-1,  0);
+      if (ay >  dead && (prev.axes[1]||0) <=  dead) gpNameMove( 1,  0);
+      if (ax < -dead && (prev.axes[0]||0) >= -dead) gpNameMove( 0, -1);
+      if (ax >  dead && (prev.axes[0]||0) <=  dead) gpNameMove( 0,  1);
+    } else {
+      if (ay < -dead && (prev.axes[1]||0) >= -dead) jp["ArrowUp"]    = true;
+      if (ay >  dead && (prev.axes[1]||0) <=  dead) jp["ArrowDown"]  = true;
+      if (ax < -dead && (prev.axes[0]||0) >= -dead) jp["ArrowLeft"]  = true;
+      if (ax >  dead && (prev.axes[0]||0) <=  dead) jp["ArrowRight"] = true;
+    }
     prev.axes[0] = ax;
     prev.axes[1] = ay;
   }
 }
 
-window.addEventListener("gamepadconnected",    e => console.log("Joystick connected:", e.gamepad.id));
-window.addEventListener("gamepaddisconnected", e => console.log("Joystick disconnected:", e.gamepad.id));
+window.addEventListener("gamepadconnected",    e => {
+  console.log("Controller connected:", e.gamepad.id);
+  if (S) S.popups.push({ txt: "🎮 CONTROLLER CONNECTED", life: 180, x: CFG.W/2, y: 60, col: "#FFE000" });
+});
+window.addEventListener("gamepaddisconnected", e => {
+  console.log("Controller disconnected:", e.gamepad.id);
+  if (S) S.popups.push({ txt: "🎮 CONTROLLER DISCONNECTED", life: 180, x: CFG.W/2, y: 60, col: "#FF4444" });
+});
 
 function resize() {
   const s = Math.min(window.innerWidth / CFG.W, window.innerHeight / CFG.H);
@@ -159,9 +214,8 @@ function tryStartMusic() {
 document.addEventListener("click",   tryStartMusic);
 document.addEventListener("keydown", tryStartMusic);
 
-function loadSfx(name, b64, type="audio/wav") {
-  const dataUrl = "data:" + type + ";base64," + b64;
-  fetch(dataUrl)
+function loadSfx(name, url) {
+  fetch(url)
     .then(r => r.arrayBuffer())
     .then(buf => getAudioCtx().decodeAudioData(buf))
     .then(decoded => { sfx[name] = decoded; })
@@ -191,7 +245,7 @@ let musicEl = null;
 
 function startMusic() {
   if (musicEl) return; // already playing
-  const audio = new Audio("data:audio/mp3;base64," + MUSIC_B64);
+  const audio = new Audio(MUSIC_SRC);
   audio.loop = false; // plays once start to finish
   audio.volume = 0.5;
   audio.play().catch(() => {});
@@ -313,6 +367,8 @@ function resetPlay() {
   S.jumpVel=0;
   S.isJumping=false;
   S.jumpCooldown=0;
+  S.onPlatform=false;
+  S.platformObj=null;
   S.level=1;
   S.bg="Level_1_Background_scroll.png";
 }
@@ -334,6 +390,8 @@ function resetLevel2() {
   S.jumpVel=0;
   S.isJumping=false;
   S.jumpCooldown=0;
+  S.onPlatform=false;
+  S.platformObj=null;
   S.level=2;
   S.bg="Level_2_Background_scroll.png";
 }
@@ -355,6 +413,8 @@ function resetLevel3() {
   S.jumpVel=0;
   S.isJumping=false;
   S.jumpCooldown=0;
+  S.onPlatform=false;
+  S.platformObj=null;
   S.level=3;
   S.bg="Level_3_Head_Office.png";
 }
@@ -397,7 +457,8 @@ function spawn(type, opts={}) {
     if (opts.airOnly) airOnly = true;
   } else if (type==="obstacle") {
     const o = opts.obstacleDef || CFG.obstacles[Math.floor(Math.random()*CFG.obstacles.length)];
-    imgName=o.img; pen=o.penalty; h=o.h||CFG.obstacleH;
+    imgName=(S.level===2 && o.level2img) ? o.level2img : (S.level===3 && o.level3img) ? o.level3img : o.img;
+    pen=o.penalty; h=o.h||CFG.obstacleH;
     floatingCase = !!o.hasFloatingCase;
     landable = !!o.landable;
   } else {
@@ -719,29 +780,31 @@ function drawInstrAvoid() {
   txt("✦  AVOID BORING BANANAS  ✦",CFG.W/2,64,'bold 50px "ClaudiaShouter"',"#9ac9b5","center");
   txt("EACH HIT = -1 KARMA + POINT PENALTY",CFG.W/2,96,'20px "ClaudiaShouter"',"#f08050","center",false);
 
-  const cols=3, rows=2;
-  const cellW=Math.floor((CFG.W-80)/cols);
-  const cellH=165;  // taller to fit bigger image + text
-  const imgH=100;   // 25% bigger than 80px
-  const startX=40, startY=112;
+  const cols=2;
+  const cellW=220, cellH=160, imgH=95;
+  const gapX=40, rowGap=24;
+  const totalW=cols*cellW+(cols-1)*gapX;
+  const startX=(CFG.W-totalW)/2;
+  const startY=108;
 
-  CFG.obstacles.filter(o => !o.landable).forEach((o,i)=>{
+  CFG.obstacles.filter(o => !o.landable).slice(0,4).forEach((o,i)=>{
     const col=i%cols, row=Math.floor(i/cols);
-    const bx=startX+col*cellW, by=startY+row*cellH;
-    const cW=cellW-10;
+    const bx=startX+col*(cellW+gapX), by=startY+row*(cellH+rowGap);
 
     // Image on top, centered in cell
-    drawImgFit(o.img, bx+2, by+2, cW, imgH);
+    drawImgFit(o.img, bx, by, cellW, imgH);
 
     // Text below image
     const nameLines = o.name.split('\n');
     nameLines.forEach((line, li) => {
-      txt(line, bx+cW/2, by+imgH+20+(li*20), 'bold 18px "ClaudiaShouter"', "#f08050","center");
+      txt(line, bx+cellW/2, by+imgH+22+(li*20), 'bold 18px "ClaudiaShouter"', "#f08050","center");
     });
-    txt("-"+o.penalty+" pts + -1 ❤", bx+cW/2, by+imgH+20+(nameLines.length*20)+4, 'bold 16px "ClaudiaShouter"', "#fbbb30","center",false);
+    txt("-"+o.penalty+" pts + -1 ❤", bx+cellW/2, by+imgH+22+(nameLines.length*20)+4, 'bold 16px "ClaudiaShouter"', "#fbbb30","center",false);
   });
 
-  btn("START GAME →",CFG.W/2-90,458,180,46);
+  // Button sits below the grid: startY + 2 rows + content height + padding
+  const gridBottom = startY + (cellH+rowGap) + imgH + 22 + (2*20) + 4; // ~468
+  btn("START GAME →",CFG.W/2-90, gridBottom+16, 180,46);
 }
 
 function drawGameplay() {
@@ -767,44 +830,46 @@ function drawGameplay() {
   });
   ctx.setLineDash([]);
 
-  // Draw objects bottom-aligned to their lane floor
-  S.objects.forEach(o=>{
-    const bottomY = CFG.laneY[o.lane] - (o.floatOffset || 0);
-    drawImgBottom(o.imgName, o.x, bottomY, o.h);
-    if (o.airOnly && !o.done) {
-      const aspect = getImgAspect(o.imgName);
-      const w = o.h * aspect;
-      ctx.strokeStyle = `rgba(100,255,220,${0.5+0.4*Math.sin(S.frame*0.15)})`;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(o.x - w/2, bottomY - o.h, w, o.h);
-    }
-  });
-
-  // Draw player normally
+  // Draw objects and player in depth order: lane 0 (top/back) → lane 2 (bottom/front)
   const ch = S.char || CFG.characters[0];
   const visible = S.invuln<=0 || Math.floor(S.frame/4)%2===0;
-  if(visible){
-    if(S.glow>0){ctx.shadowColor="#00FF88";ctx.shadowBlur=24;}
-    if(S.hit>0){ctx.shadowColor="#FF0000";ctx.shadowBlur=30;}
-    const bobSpeed = 0.28 + (S.currentObjSpeed - CFG.objSpeed) * 0.04;
-    const bobAmt = S.isJumping ? 0 : 4;
-    const bob = Math.sin(S.frame * bobSpeed) * bobAmt;
-    // playerBottomY = where the player's feet are
-    const playerBottomY = CFG.laneY[S.lane] + S.jumpY + bob;
+  const bobSpeed = 0.28 + (S.currentObjSpeed - CFG.objSpeed) * 0.04;
+  const bobAmt = S.isJumping ? 0 : 4;
+  const bob = Math.sin(S.frame * bobSpeed) * bobAmt;
+  const playerBottomY = CFG.laneY[S.lane] + S.jumpY + bob;
 
-    if(ch.sheet && imgs[ch.sheet] && imgs[ch.sheet].complete) {
-      const frameRate = 12;
-      const frameIdx = Math.floor(S.frame / frameRate) % ch.frames.length;
-      const f = ch.frames[frameIdx];
-      const im = imgs[ch.sheet];
-      const scale = CFG.playerH / ch.frameH;
-      const dw = f.w * scale;
-      const dh = CFG.playerH;
-      ctx.drawImage(im, f.x, 0, f.w, ch.frameH, CFG.playerX - dw/2, playerBottomY - dh, dw, dh);
-    } else {
-      drawImgBottom(ch.run, CFG.playerX, playerBottomY, CFG.playerH);
+  for (let layer = 0; layer < 3; layer++) {
+    // Objects in this lane
+    S.objects.filter(o => o.lane === layer).forEach(o => {
+      const bottomY = CFG.laneY[o.lane] - (o.floatOffset || 0);
+      drawImgBottom(o.imgName, o.x, bottomY, o.h);
+      if (o.airOnly && !o.done) {
+        const aspect = getImgAspect(o.imgName);
+        const w = o.h * aspect;
+        ctx.strokeStyle = `rgba(100,255,220,${0.5+0.4*Math.sin(S.frame*0.15)})`;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(o.x - w/2, bottomY - o.h, w, o.h);
+      }
+    });
+
+    // Player drawn within their lane so depth is correct
+    if (S.lane === layer && visible) {
+      if(S.glow>0){ctx.shadowColor="#00FF88";ctx.shadowBlur=24;}
+      if(S.hit>0){ctx.shadowColor="#FF0000";ctx.shadowBlur=30;}
+      if(ch.sheet && imgs[ch.sheet] && imgs[ch.sheet].complete) {
+        const frameRate = 12;
+        const frameIdx = Math.floor(S.frame / frameRate) % ch.frames.length;
+        const f = ch.frames[frameIdx];
+        const im = imgs[ch.sheet];
+        const scale = CFG.playerH / ch.frameH;
+        const dw = f.w * scale;
+        const dh = CFG.playerH;
+        ctx.drawImage(im, f.x, 0, f.w, ch.frameH, CFG.playerX - dw/2, playerBottomY - dh, dw, dh);
+      } else {
+        drawImgBottom(ch.run, CFG.playerX, playerBottomY, CFG.playerH);
+      }
+      ctx.shadowBlur=0; ctx.shadowColor="transparent";
     }
-    ctx.shadowBlur=0; ctx.shadowColor="transparent";
   }
 
   // Popups
@@ -867,24 +932,76 @@ function drawName() {
   if (S.nameFrame === undefined) S.nameFrame = 0;
   S.nameFrame++;
   if (!S.nameInput) S.nameInput = "";
+  if (S.gpNameRow === undefined) { S.gpNameRow = 0; S.gpNameCol = 0; }
 
-  const gr=ctx.createRadialGradient(CFG.W/2,CFG.H/2,50,CFG.W/2,CFG.H/2,450);
-  gr.addColorStop(0,S.result==="win"?"#1a1a00":"#1a0000"); gr.addColorStop(1,"#000");
-  ctx.fillStyle=gr; ctx.fillRect(0,0,CFG.W,CFG.H);
+  // Background
+  const gr = ctx.createRadialGradient(CFG.W/2, CFG.H/2, 50, CFG.W/2, CFG.H/2, 450);
+  gr.addColorStop(0, S.result === "win" ? "#1a1a00" : "#1a0000");
+  gr.addColorStop(1, "#000");
+  ctx.fillStyle = gr; ctx.fillRect(0, 0, CFG.W, CFG.H);
 
-  txt(S.result==="win"?"🏆 YOU WIN!":"💀 GAME OVER",CFG.W/2,130,'bold 52px "ClaudiaShouter"',(S.result==="win"?"#FFE000":"#FF2244"),"center");
-  txt("SCORE: "+Math.floor(S.score),CFG.W/2,195,'bold 26px "ClaudiaShouter"',"#FFF","center");
-  txt("ENTER YOUR NAME:",CFG.W/2,265,'bold 22px "ClaudiaShouter"',"#FFE000","center");
+  // Title & score
+  txt(S.result === "win" ? "🏆 YOU WIN!" : "💀 GAME OVER", CFG.W/2, 72,
+      'bold 52px "ClaudiaShouter"', S.result === "win" ? "#FFE000" : "#FF2244", "center");
+  txt("SCORE: " + Math.floor(S.score), CFG.W/2, 122, 'bold 26px "ClaudiaShouter"', "#FFF", "center");
+  txt("ENTER YOUR NAME:", CFG.W/2, 160, 'bold 20px "ClaudiaShouter"', "#FFE000", "center");
 
-  const bx=CFG.W/2-155, by=286;
-  ctx.fillStyle="#111"; ctx.fillRect(bx,by,310,50);
-  ctx.strokeStyle="#FFE000"; ctx.lineWidth=3; ctx.strokeRect(bx,by,310,50);
-  const cursor=Math.floor(S.nameFrame/18)%2===0?"_":"";
-  txt(S.nameInput+cursor,CFG.W/2,by+34,'bold 26px "ClaudiaShouter"',"#FFE000","center",false);
+  // Name input box
+  const bx = CFG.W/2 - 155, by = 172;
+  ctx.fillStyle = "#111"; ctx.fillRect(bx, by, 310, 46);
+  ctx.strokeStyle = "#FFE000"; ctx.lineWidth = 3; ctx.strokeRect(bx, by, 310, 46);
+  const cursor = Math.floor(S.nameFrame / 18) % 2 === 0 ? "_" : "";
+  txt(S.nameInput + cursor, CFG.W/2, by + 32, 'bold 26px "ClaudiaShouter"', "#FFE000", "center", false);
 
-  const secsLeft = Math.max(0, 60 - Math.floor(S.nameFrame/60));
-  txt("TYPE NAME + PRESS ENTER  (AUTO IN "+secsLeft+"S)",CFG.W/2,380,'13px "ClaudiaShouter"',"#888","center",false);
-  btn("SUBMIT",CFG.W/2-60,404,120,44);
+  // ── On-screen letter grid ──────────────────────────────────
+  // Row 0 & 1: 13 letters each  (cell 36×34, gap 3)
+  // Row 2:     SPC / DEL / DONE (wider cells)
+  const CW = 36, CH = 34, GAP = 3;
+  const rowY = [238, 276, 318]; // top-y of each row
+
+  GP_GRID.forEach((row, ri) => {
+    // Work out the total row pixel width so we can centre it
+    const cellWidths = row.map(ch => ri === 2 ? (ch === 'DONE' ? 116 : 92) : CW);
+    const rowW = cellWidths.reduce((s, w) => s + w, 0) + (row.length - 1) * GAP;
+    let cx = Math.floor((CFG.W - rowW) / 2);
+    const cellH = ri === 2 ? 38 : CH;
+
+    row.forEach((ch, ci) => {
+      const cellW = cellWidths[ci];
+      const isSel = S.gpNameRow === ri && S.gpNameCol === ci;
+
+      // Cell fill — pulse the selected cell slightly
+      const pulse = isSel ? 0.08 * Math.sin(S.nameFrame * 0.18) : 0;
+      ctx.fillStyle = isSel ? "#FFE000" : "#1e1e1e";
+      ctx.globalAlpha = 1 + pulse;
+      ctx.fillRect(cx, rowY[ri], cellW, cellH);
+      ctx.globalAlpha = 1;
+
+      // Border
+      ctx.strokeStyle = isSel ? "#FFFFFF" : "#444";
+      ctx.lineWidth   = isSel ? 2 : 1;
+      ctx.strokeRect(cx, rowY[ri], cellW, cellH);
+
+      // Label (txt() uppercases automatically)
+      const label    = ch === 'SPC' ? 'SPC' : ch === 'DEL' ? 'DEL' : ch === 'DONE' ? 'DONE' : ch;
+      const fontSize = ri === 2 ? '13px' : '15px';
+      txt(label, cx + cellW/2, rowY[ri] + cellH - 9,
+          `bold ${fontSize} "ClaudiaShouter"`, isSel ? "#000" : "#CCC", "center", false);
+
+      cx += cellW + GAP;
+    });
+  });
+
+  // Controller hint
+  txt("GAMEPAD:  D-PAD=MOVE   A=SELECT   B=DELETE   START=SUBMIT",
+      CFG.W/2, 372, '12px "ClaudiaShouter"', "#888", "center", false);
+  txt("KEYBOARD: TYPE NAME + PRESS ENTER",
+      CFG.W/2, 390, '12px "ClaudiaShouter"', "#555", "center", false);
+
+  // Auto-submit countdown & submit button
+  const secsLeft = Math.max(0, 60 - Math.floor(S.nameFrame / 60));
+  txt("AUTO-SUBMIT IN " + secsLeft + "S", CFG.W/2, 416, '12px "ClaudiaShouter"', "#444", "center", false);
+  btn("SUBMIT", CFG.W/2 - 60, 426, 120, 40);
 
   if (S.nameFrame >= 3600) submitName();
 }
@@ -927,7 +1044,7 @@ function startIntroVideo() {
   if (introVideo) { introVideo.pause(); introVideo.remove(); }
 
   const vid = document.createElement("video");
-  vid.src = "data:video/mp4;base64," + INTRO_VIDEO_B64;
+  vid.src = INTRO_VIDEO_SRC;
   vid.playsInline = true;
 
   const r = canvas.getBoundingClientRect();
@@ -1059,15 +1176,15 @@ function startCutscene() {
   // Pick cutscene based on selected character
   const charName = (S.char ? S.char.name : "NERD").toLowerCase();
   const cutsceneMap = {
-    assassin: CUTSCENE_ASSASSIN_B64,
-    bulldozer: CUTSCENE_BULLDOZER_B64,
-    curious:   CUTSCENE_CURIOUS_B64,
-    nerd:      CUTSCENE_NERD_B64,
+    assassin: CUTSCENE_ASSASSIN_SRC,
+    bulldozer: CUTSCENE_BULLDOZER_SRC,
+    curious:   CUTSCENE_CURIOUS_SRC,
+    nerd:      CUTSCENE_NERD_SRC,
   };
-  const b64 = cutsceneMap[charName] || CUTSCENE_NERD_B64;
+  const src = cutsceneMap[charName] || CUTSCENE_NERD_SRC;
 
   const vid = document.createElement("video");
-  vid.src = "data:video/mp4;base64," + b64;
+  vid.src = src;
   vid.style.display = "none";
   vid.preload = "auto";
   document.body.appendChild(vid);
@@ -1078,6 +1195,55 @@ function startCutscene() {
     vid.remove();
     cutsceneVideo = null;
     resumeMusic();
+  };
+}
+function startCutscene3() {
+  if (cutsceneVideo) { cutsceneVideo.pause(); cutsceneVideo.remove(); }
+  pauseMusic();
+  const charName = (S.char ? S.char.name : "NERD").toLowerCase();
+  const cutsceneMap = {
+    assassin:  CUTSCENE3_ASSASSIN_SRC,
+    bulldozer: CUTSCENE3_BULLDOZER_SRC,
+    curious:   CUTSCENE3_CURIOUS_SRC,
+    nerd:      CUTSCENE3_NERD_SRC,
+  };
+  const src = cutsceneMap[charName] || CUTSCENE3_NERD_SRC;
+  const vid = document.createElement("video");
+  vid.src = src;
+  vid.style.display = "none";
+  vid.preload = "auto";
+  document.body.appendChild(vid);
+  cutsceneVideo = vid;
+  const advance3 = () => { vid.remove(); cutsceneVideo = null; S.screen = "ending"; startEndingVideo(); };
+  vid.play().catch(() => advance3());
+  vid.onended = advance3;
+  vid.onerror = advance3;
+}
+
+function startEndingVideo() {
+  if (cutsceneVideo) { cutsceneVideo.pause(); cutsceneVideo.remove(); }
+  const charName = (S.char ? S.char.name : "NERD").toLowerCase();
+  const endingMap = {
+    assassin:  ENDING_ASSASSIN_SRC,
+    bulldozer: ENDING_BULLDOZER_SRC,
+    curious:   ENDING_CURIOUS_SRC,
+    nerd:      ENDING_NERD_SRC,
+  };
+  const src = endingMap[charName] || ENDING_NERD_SRC;
+  const vid = document.createElement("video");
+  vid.src = src;
+  vid.style.display = "none";
+  vid.preload = "auto";
+  document.body.appendChild(vid);
+  cutsceneVideo = vid;
+  vid.play().catch(() => {});
+  vid.onended = () => {
+    vid.remove();
+    cutsceneVideo = null;
+    stopMusic();
+    S.screen = "name";
+    S.nameInput = "";
+    S.nameFrame = undefined;
   };
 }
 
@@ -1097,14 +1263,14 @@ function startCutscene2() {
   pauseMusic();
   const charName = (S.char ? S.char.name : "NERD").toLowerCase();
   const cutsceneMap = {
-    assassin:  CUTSCENE2_ASSASSIN_B64,
-    bulldozer: CUTSCENE2_BULLDOZER_B64,
-    curious:   CUTSCENE2_CURIOUS_B64,
-    nerd:      CUTSCENE2_NERD_B64,
+    assassin:  CUTSCENE2_ASSASSIN_SRC,
+    bulldozer: CUTSCENE2_BULLDOZER_SRC,
+    curious:   CUTSCENE2_CURIOUS_SRC,
+    nerd:      CUTSCENE2_NERD_SRC,
   };
-  const b64 = cutsceneMap[charName] || CUTSCENE2_NERD_B64;
+  const src = cutsceneMap[charName] || CUTSCENE2_NERD_SRC;
   const vid = document.createElement("video");
-  vid.src = "data:video/mp4;base64," + b64;
+  vid.src = src;
   vid.style.display = "none";
   vid.preload = "auto";
   document.body.appendChild(vid);
@@ -1120,8 +1286,7 @@ function startCutscene2() {
 
 // ── INPUT ROUTING ─────────────────────────────────────────────
 function handleInput() {
-  const splashScreens = ["level1complete","level2complete","level3complete","level2splash","level3splash"];
-  const ok = jp["Enter"] || (S.screen !== "play" && !splashScreens.includes(S.screen) && jp["Space"]);
+  const ok = jp["Enter"] || (S.screen !== "play" && jp["Space"]);
   const L=jp["ArrowLeft"], R=jp["ArrowRight"];
   switch(S.screen){
     case"title":       if(ok) { S.screen="intro"; startIntroVideo(); } break;
@@ -1136,10 +1301,13 @@ function handleInput() {
     case"instravoid":   if(ok){resetPlay();S.screen="play"; startMusic();} break;
     case"level1complete": if(ok){ S.screen="cutscene"; startCutscene(); clearJP(); } break;
     case"level2complete": if(ok){ S.screen="cutscene2"; startCutscene2(); clearJP(); } break;
+    case"level2splash":   if(ok){ resetLevel2(); S.screen="play"; clearJP(); } break;
     case"level3splash":   if(ok){ resetLevel3(); S.screen="play"; clearJP(); } break;
-    case"level3complete": if(ok){ S.screen="name"; S.nameInput=""; S.nameFrame=undefined; stopMusic(); clearJP(); } break;
+    case"level3complete": if(ok){ S.screen="cutscene3"; startCutscene3(); clearJP(); } break;
     case"cutscene":     if(ok){ if(cutsceneVideo){cutsceneVideo.onended=null;cutsceneVideo.pause();cutsceneVideo.remove();cutsceneVideo=null;} resumeMusic(); S.screen="level2splash"; clearJP(); } break;
     case"cutscene2":    if(ok){ if(cutsceneVideo){cutsceneVideo.onended=null;cutsceneVideo.pause();cutsceneVideo.remove();cutsceneVideo=null;} resumeMusic(); S.screen="level3splash"; clearJP(); } break;
+    case"cutscene3":    if(ok){ if(cutsceneVideo){cutsceneVideo.onended=null;cutsceneVideo.pause();cutsceneVideo.remove();cutsceneVideo=null;} S.screen="ending"; startEndingVideo(); clearJP(); } break;
+    case"ending":       if(ok){ if(cutsceneVideo){cutsceneVideo.onended=null;cutsceneVideo.pause();cutsceneVideo.remove();cutsceneVideo=null;} stopMusic(); S.screen="name"; S.nameInput=""; S.nameFrame=undefined; clearJP(); } break;
     case"win":          if(ok){S.screen="name";S.nameInput="";} break;
     case"leaderboard":  if(ok) S.screen="title"; break;
   }
@@ -1166,7 +1334,7 @@ canvas.addEventListener("click",e=>{
     case"level2complete": if(hit(CFG.W/2-90,CFG.H/2+120,180,44)){ S.screen="cutscene2"; startCutscene2(); clearJP(); } break;
     case"cutscene2":      if(ok){ if(cutsceneVideo){cutsceneVideo.onended=null;cutsceneVideo.pause();cutsceneVideo.remove();cutsceneVideo=null;} resumeMusic(); S.screen="level3splash"; clearJP(); } break;
     case"level3splash":   if(hit(CFG.W/2-90,CFG.H/2+100,180,44)){ resetLevel3(); S.screen="play"; clearJP(); } break;
-    case"level3complete": if(hit(CFG.W/2-90,CFG.H/2+120,180,44)){ S.screen="name"; S.nameInput=""; S.nameFrame=undefined; stopMusic(); clearJP(); } break;
+    case"level3complete": if(hit(CFG.W/2-90,CFG.H/2+120,180,44)){ S.screen="cutscene3"; startCutscene3(); clearJP(); } break;
     case"level2splash": if(hit(CFG.W/2-90,CFG.H/2+100,180,44)){ resetLevel2(); S.screen="play"; clearJP(); } break;
     case"gameover":     if(hit(CFG.W/2-95,368,190,50)){S.screen="name";S.nameInput="";} break;
     case"win":          if(hit(CFG.W/2-95,390,190,50)){S.screen="name";S.nameInput="";} break;
@@ -1207,6 +1375,8 @@ function loop(){
       case"level3complete":drawLevel3Complete(); break;
       case"cutscene":    drawCutscene(); break;
       case"cutscene2":   drawCutscene(); break;
+      case"cutscene3":   drawCutscene(); break;
+      case"ending":      drawCutscene(); break;
       case"level2splash":drawLevel2Splash(); break;
       case"level3splash":drawLevel3Splash(); break;
       case"name":        drawName(); break;
