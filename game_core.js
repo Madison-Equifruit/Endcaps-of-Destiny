@@ -9,7 +9,7 @@ const CFG = {
   bgSpeed: 3.0,
   objSpeed: 5.0,
   caseRate: 25,
-  obstacleRate: 55,
+  obstacleRate: 100,
   powerupRate: 1100,  // ~2-3 times in 60 seconds at 60fps
   casePoints: 50,
   organicPoints: 75,
