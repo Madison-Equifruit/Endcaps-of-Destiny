@@ -760,6 +760,50 @@ function drawCharSelect() {
   btn("CONFIRM →",CFG.W/2-80,388,160,46);
 }
 
+function drawInstrControls() {
+  ctx.fillStyle="#2e2624"; ctx.fillRect(0,0,CFG.W,CFG.H);
+  ctx.strokeStyle="#FFE000"; ctx.lineWidth=3; ctx.strokeRect(24,14,CFG.W-48,CFG.H-28);
+  txt("✦  HOW TO PLAY  ✦",CFG.W/2,60,'bold 42px "ClaudiaShouter"',"#FFE000","center");
+
+  const panelW=360, panelH=280, gap=40;
+  const lx=(CFG.W/2)-panelW-(gap/2);
+  const rx=(CFG.W/2)+(gap/2);
+  const py=88;
+
+  // ── KEYBOARD PANEL ───────────────────────────────────────────
+  ctx.fillStyle="rgba(255,255,255,0.03)"; ctx.fillRect(lx,py,panelW,panelH);
+  ctx.strokeStyle="#9ac9b5"; ctx.lineWidth=2; ctx.strokeRect(lx,py,panelW,panelH);
+  txt("⌨  KEYBOARD",lx+panelW/2,py+34,'bold 22px "ClaudiaShouter"',"#9ac9b5","center",false);
+
+  [["↑ / ↓  ARROW KEYS","SWITCH LANES"],
+   ["SPACE BAR","JUMP"],
+   ["ENTER","CONFIRM / SKIP"]
+  ].forEach(([key,action],i)=>{
+    const ky=py+78+i*66;
+    ctx.fillStyle="rgba(154,201,181,0.12)"; ctx.fillRect(lx+18,ky-20,panelW-36,50);
+    txt(key,   lx+panelW/2,ky,   'bold 15px "ClaudiaShouter"',"#FFE000","center",false);
+    txt(action,lx+panelW/2,ky+20,'13px "ClaudiaShouter"',"#DDD","center",false);
+  });
+
+  // ── CONTROLLER PANEL ─────────────────────────────────────────
+  ctx.fillStyle="rgba(255,255,255,0.03)"; ctx.fillRect(rx,py,panelW,panelH);
+  ctx.strokeStyle="#d8c7e0"; ctx.lineWidth=2; ctx.strokeRect(rx,py,panelW,panelH);
+  txt("🎮  CONTROLLER",rx+panelW/2,py+34,'bold 22px "ClaudiaShouter"',"#d8c7e0","center",false);
+
+  [["D-PAD  ↑ / ↓","SWITCH LANES"],
+   ["A BUTTON","JUMP"],
+   ["START / A","CONFIRM / SKIP"]
+  ].forEach(([key,action],i)=>{
+    const ky=py+78+i*66;
+    ctx.fillStyle="rgba(216,199,224,0.12)"; ctx.fillRect(rx+18,ky-20,panelW-36,50);
+    txt(key,   rx+panelW/2,ky,   'bold 15px "ClaudiaShouter"',"#FFE000","center",false);
+    txt(action,rx+panelW/2,ky+20,'13px "ClaudiaShouter"',"#DDD","center",false);
+  });
+
+  txt("DODGE OBSTACLES AND COLLECT CASES TO SCORE!",CFG.W/2,py+panelH+26,'bold 15px "ClaudiaShouter"',"#fbbb30","center",false);
+  btn("NEXT: COLLECT THESE →",CFG.W/2-130,py+panelH+46,260,46);
+}
+
 function drawInstrCollect() {
   ctx.fillStyle="#2e2624"; ctx.fillRect(0,0,CFG.W,CFG.H);
   ctx.fillStyle="rgba(0,0,0,0)"; ctx.fillRect(24,14,CFG.W-48,CFG.H-28);
@@ -1318,10 +1362,11 @@ function handleInput() {
     case"charselect":
       if(L) S.charIdx=(S.charIdx-1+4)%4;
       if(R) S.charIdx=(S.charIdx+1)%4;
-      if(ok){S.char=CFG.characters[S.charIdx];S.screen="instrcollect";} break;
+      if(ok){S.char=CFG.characters[S.charIdx];S.screen="instrcontrols";} break;
     case"intro":
       if(ok) { stopIntroVideo(); S.screen = "charselect"; clearJP(); }
       break;
+    case"instrcontrols": if(ok) S.screen="instrcollect"; break;
     case"instrcollect": if(ok) S.screen="instravoid"; break;
     case"instravoid":   if(ok){resetPlay();S.screen="play"; startMusic();} break;
     case"level1complete": if(ok){ S.screen="cutscene"; startCutscene(); clearJP(); } break;
@@ -1351,8 +1396,9 @@ canvas.addEventListener("click",e=>{
     case"charselect":{
       const cW=190,gap=16,tw=4*(cW+gap)-gap,sx2=(CFG.W-tw)/2;
       CFG.characters.forEach((_,i)=>{if(hit(sx2+i*(cW+gap),102,cW,250)) S.charIdx=i;});
-      if(hit(CFG.W/2-80,388,160,46)){S.char=CFG.characters[S.charIdx];S.screen="instrcollect";}
+      if(hit(CFG.W/2-80,388,160,46)){S.char=CFG.characters[S.charIdx];S.screen="instrcontrols";}
       break;}
+    case"instrcontrols": if(hit(CFG.W/2-130,88+280+46,260,46)) S.screen="instrcollect"; break;
     case"instrcollect": if(hit(CFG.W/2-130,410,260,46)) S.screen="instravoid"; break;
     case"instravoid":   if(hit(CFG.W/2-90,458,180,46)){resetPlay();S.screen="play";} break;
     case"level1complete": if(hit(CFG.W/2-90,CFG.H/2+120,180,44)){ S.screen="cutscene"; startCutscene(); clearJP(); } break;
@@ -1396,8 +1442,9 @@ function loop(now = 0){
     switch(S.screen){
       case"title":       drawTitle(); break;
       case"intro":       drawIntro(); break;
-      case"charselect":  drawCharSelect(); break;
-      case"instrcollect":drawInstrCollect(); break;
+      case"charselect":    drawCharSelect(); break;
+      case"instrcontrols": drawInstrControls(); break;
+      case"instrcollect":  drawInstrCollect(); break;
       case"instravoid":  drawInstrAvoid(); break;
       case"play":        drawGameplay(); break;
       case"gameover":    drawGameOver(); break;
