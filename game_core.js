@@ -4,19 +4,19 @@ const CFG = {
   laneY: [360, 410, 460],
   playerX: 130,
   playerH: 110,           // target height; width auto from aspect ratio
-  switchCooldown: 140,
+  switchCooldown: 45,
   invulnMs: 2400,
-  bgSpeed: 0.8,
-  objSpeed: 1.2,
-  caseRate: 70,
-  obstacleRate: 220,
+  bgSpeed: 3.0,
+  objSpeed: 5.0,
+  caseRate: 25,
+  obstacleRate: 100,
   powerupRate: 1100,  // ~2-3 times in 60 seconds at 60fps
   casePoints: 50,
   organicPoints: 75,
   startKarma: 5,
   maxKarma: 5,
   targetScore: 999999, // no score cap — timer runs out instead
-  gameDuration: 60,    // seconds
+  gameDuration: 30,    // seconds
   jumpVelocity: -15,   // pixels per frame upward
   gravity: 1.1,        // high gravity = snappy arc
   jumpCooldown: 8,     // frames before you can jump again after landing
@@ -351,7 +351,7 @@ function clearJP() { for(const k in jp) delete jp[k]; }
 
 // ── STATE ────────────────────────────────────────────────────
 let S = {};
-let LEADERBOARD = []; // persists across game resets
+let LEADERBOARD = JSON.parse(localStorage.getItem("bb_leaderboard") || "[]");
 function initState() {
   S = {
     screen:"title", charIdx:0, char:null,
@@ -369,7 +369,7 @@ function resetPlay() {
   S.score=0; S.karma=CFG.startKarma; S.lane=1;
   S.switchTimer=0; S.invuln=0; S.bgX=0;
   S.objects=[]; S.popups=[];
-  S.caseT=0; S.obstT=0; S.powerT=0;
+  S.caseT=CFG.caseRate; S.obstT=CFG.obstacleRate; S.powerT=0;
   S.frame=0; S.glow=0; S.hit=0;
   S.timeLeft=CFG.gameDuration;
   S.lastSecond=0;
@@ -383,6 +383,7 @@ function resetPlay() {
   S.jumpCooldown=0;
   S.onPlatform=false;
   S.platformObj=null;
+  S.elapsed=0;
   S.level=1;
   S.bg="Level_1_Background_scroll.png";
 }
@@ -391,7 +392,7 @@ function resetLevel2() {
   S.karma=CFG.startKarma; S.lane=1;
   S.switchTimer=0; S.invuln=0; S.bgX=0;
   S.objects=[]; S.popups=[];
-  S.caseT=0; S.obstT=0; S.powerT=0;
+  S.caseT=CFG.caseRate; S.obstT=CFG.obstacleRate; S.powerT=0;
   S.frame=0; S.glow=0; S.hit=0;
   S.timeLeft=CFG.gameDuration;
   S.lastSecond=0;
@@ -406,6 +407,7 @@ function resetLevel2() {
   S.jumpCooldown=0;
   S.onPlatform=false;
   S.platformObj=null;
+  S.elapsed=0;
   S.level=2;
   S.bg="Level_2_Background_scroll.png";
 }
@@ -414,7 +416,7 @@ function resetLevel3() {
   S.karma=CFG.startKarma; S.lane=1;
   S.switchTimer=0; S.invuln=0; S.bgX=0;
   S.objects=[]; S.popups=[];
-  S.caseT=0; S.obstT=0; S.powerT=0;
+  S.caseT=CFG.caseRate; S.obstT=CFG.obstacleRate; S.powerT=0;
   S.frame=0; S.glow=0; S.hit=0;
   S.timeLeft=CFG.gameDuration;
   S.lastSecond=0;
@@ -429,6 +431,7 @@ function resetLevel3() {
   S.jumpCooldown=0;
   S.onPlatform=false;
   S.platformObj=null;
+  S.elapsed=0;
   S.level=3;
   S.bg="Level_3_Head_Office.png";
 }
@@ -439,6 +442,7 @@ function submitName() {
   LEADERBOARD.push({name, score: Math.floor(S.score)});
   LEADERBOARD.sort((a,b)=>b.score-a.score);
   if (LEADERBOARD.length>10) LEADERBOARD=LEADERBOARD.slice(0,10);
+  localStorage.setItem("bb_leaderboard", JSON.stringify(LEADERBOARD));
   S.screen = "leaderboard";
   clearJP(); // prevent the Enter keypress from instantly skipping the leaderboard
 }
@@ -500,14 +504,14 @@ function spawn(type, opts={}) {
 }
 
 // ── UPDATE ────────────────────────────────────────────────────
-function update() {
+function update(dt) {
   S.frame++;
+  S.elapsed += dt / 60; // real seconds elapsed, frame-rate independent
 
   // ── DIFFICULTY RAMP ───────────────────────────────────
   // Smooth continuous ramp over 60s
-  const elapsed = S.frame / 60;
-  S.timeLeft = Math.max(0, CFG.gameDuration - elapsed);
-  const rampT = elapsed / CFG.gameDuration; // 0 to 1 over 60s
+  S.timeLeft = Math.max(0, CFG.gameDuration - S.elapsed);
+  const rampT = Math.min(1, S.elapsed / CFG.gameDuration); // 0 to 1 over 60s
 
   // Speed ramps up
   S.currentBgSpeed  = CFG.bgSpeed  + rampT * CFG.diffRampSpeed * 0.8;
@@ -516,25 +520,25 @@ function update() {
   // Obstacles spawn faster AND cases spawn slower = worse ratio over time
   // At start: obstacle every ~120 frames, case every ~75 frames (ratio ~1.6 cases per obstacle)
   // At end:   obstacle every ~40 frames, case every ~110 frames (ratio ~0.4 cases per obstacle)
-  S.currentObstRate = Math.max(140, CFG.obstacleRate - rampT * 50);
-  S.currentCaseRate = Math.min(100, CFG.caseRate + rampT * 15);
+  S.currentObstRate = Math.max(25, CFG.obstacleRate - rampT * 30); // 55 → 25 over 60s
+  S.currentCaseRate = Math.min(45, CFG.caseRate + rampT * 20);    // 25 → 45 over 60s
 
   // ── BACKGROUND SCROLL ─────────────────────────────────
   const bgI = imgs["Level_1_Background_scroll.png"];
   const bgW = bgI&&bgI.naturalWidth ? (bgI.naturalWidth*(CFG.H/bgI.naturalHeight)) : CFG.W;
-  S.bgX -= S.currentBgSpeed;
+  S.bgX -= S.currentBgSpeed * dt;
   if (S.bgX <= -bgW) S.bgX += bgW;
 
-  if (S.switchTimer>0) S.switchTimer-=16;
+  if (S.switchTimer>0) S.switchTimer-=16*dt;
   if (S.switchTimer<=0) {
     if (jp["ArrowUp"]||jp["KeyW"]) { if(S.lane>0){S.lane--;S.switchTimer=CFG.switchCooldown;} }
     else if (jp["ArrowDown"]||jp["KeyS"]) { if(S.lane<2){S.lane++;S.switchTimer=CFG.switchCooldown;} }
   }
 
   // ── JUMP ─────────────────────────────────────────────────
-  if (S.jumpCooldown>0) S.jumpCooldown--;
+  if (S.jumpCooldown>0) S.jumpCooldown = Math.max(0, S.jumpCooldown - dt);
   const wantsJump = jp["Space"];
-  if (wantsJump && !S.isJumping && !S.onPlatform && S.jumpCooldown===0) {
+  if (wantsJump && !S.isJumping && !S.onPlatform && S.jumpCooldown<=0) {
     playSfx("jump");
     S.jumpVel = CFG.jumpVelocity;
     S.isJumping = true;
@@ -542,8 +546,8 @@ function update() {
 
   // Apply physics when airborne
   if (S.isJumping) {
-    S.jumpY += S.jumpVel;
-    S.jumpVel += CFG.gravity;
+    S.jumpY += S.jumpVel * dt;
+    S.jumpVel += CFG.gravity * dt;
 
     // Check landing on apple stand top surface
     if (S.jumpVel >= 0) {
@@ -583,11 +587,11 @@ function update() {
     }
   }
 
-  if (S.invuln>0) S.invuln-=16;
-  if (S.glow>0) S.glow-=2;
-  if (S.hit>0) S.hit--;
+  if (S.invuln>0) S.invuln-=16*dt;
+  if (S.glow>0) S.glow-=2*dt;
+  if (S.hit>0) S.hit-=dt;
 
-  S.caseT++; S.obstT++; S.powerT++;
+  S.caseT+=dt; S.obstT+=dt; S.powerT+=dt;
   if (S.caseT>=S.currentCaseRate) { S.caseT=0; spawn("case"); }
   if (S.obstT>=S.currentObstRate) { S.obstT=Math.floor(Math.random()*25); spawn("obstacle"); }
   if (S.powerT>=CFG.powerupRate)  { S.powerT=0; spawn("powerup"); }
@@ -600,7 +604,7 @@ function update() {
 
   const py = CFG.laneY[S.lane] + S.jumpY; // player's bottom Y
   S.objects.forEach(o => {
-    o.x -= S.currentObjSpeed;
+    o.x -= S.currentObjSpeed * dt;
     if (o.done) return;
     const oy = CFG.laneY[o.lane] - (o.floatOffset || 0);
     const dx = Math.abs(CFG.playerX - o.x);
@@ -633,9 +637,9 @@ function update() {
     }
   });
   S.objects = S.objects.filter(o=>o.x>-200&&!o.done);
-  S.score += 0.025;
+  S.score += 0.025 * dt;
   S.popups = S.popups.filter(p=>p.life>0);
-  S.popups.forEach(p=>{p.y-=0.7;p.life--;});
+  S.popups.forEach(p=>{p.y-=0.7*dt;p.life-=dt;});
 
   // ── END CONDITIONS ────────────────────────────────────
   if (S.karma<=0) { S.result="lose"; S.screen="name"; S.nameInput=""; S.nameFrame=undefined; stopMusic(); }
@@ -835,9 +839,7 @@ function drawGameplay() {
     const sc=CFG.H/bgI.naturalHeight;
     const bw=bgI.naturalWidth*sc;
     let bx=Math.round(S.bgX);
-    ctx.imageSmoothingEnabled=false;
     while(bx<CFG.W){ctx.drawImage(bgI,bx,0,bw,CFG.H);bx+=bw;}
-    ctx.imageSmoothingEnabled=true;
     if(S.bgX<=-bw) S.bgX+=bw;
   } else {
     ctx.fillStyle="#8B4513"; ctx.fillRect(0,0,CFG.W,CFG.H);
@@ -860,8 +862,10 @@ function drawGameplay() {
   const playerBottomY = CFG.laneY[S.lane] + S.jumpY + bob;
 
   for (let layer = 0; layer < 3; layer++) {
-    // Objects in this lane
-    S.objects.filter(o => o.lane === layer).forEach(o => {
+    // Objects in this lane — plain for loop avoids per-frame array allocation
+    for (let i = 0; i < S.objects.length; i++) {
+      const o = S.objects[i];
+      if (o.lane !== layer) continue;
       const bottomY = CFG.laneY[o.lane] - (o.floatOffset || 0);
       drawImgBottom(o.imgName, o.x, bottomY, o.h);
       if (o.airOnly && !o.done) {
@@ -871,12 +875,12 @@ function drawGameplay() {
         ctx.lineWidth = 2;
         ctx.strokeRect(o.x - w/2, bottomY - o.h, w, o.h);
       }
-    });
+    }
 
     // Player drawn within their lane so depth is correct
     if (S.lane === layer && visible) {
-      if(S.glow>0){ctx.shadowColor="#00FF88";ctx.shadowBlur=24;}
-      if(S.hit>0){ctx.shadowColor="#FF0000";ctx.shadowBlur=30;}
+      if(S.glow>0){ctx.shadowColor="#00FF88";ctx.shadowBlur=12;}
+      if(S.hit>0){ctx.shadowColor="#FF0000";ctx.shadowBlur=14;}
       if(ch.sheet && imgs[ch.sheet] && imgs[ch.sheet].complete) {
         const frameRate = 12;
         const frameIdx = Math.floor(S.frame / frameRate) % ch.frames.length;
@@ -1102,7 +1106,7 @@ function drawLevel1Complete() {
   for(let y=0;y<CFG.H;y+=4){ctx.fillStyle="rgba(0,0,0,0.15)";ctx.fillRect(0,y,CFG.W,2);}
 
   const pulse = 0.7 + 0.3*Math.sin(Date.now()*0.004);
-  ctx.shadowColor="#00FF88"; ctx.shadowBlur=50*pulse;
+  ctx.shadowColor="#00FF88"; ctx.shadowBlur=16*pulse;
   txt("LEVEL 1", CFG.W/2, CFG.H/2-50, 'bold 80px "ClaudiaShouter"', "#FFE000", "center");
   ctx.shadowBlur=0; ctx.shadowColor="transparent";
   txt("COMPLETE!", CFG.W/2, CFG.H/2+30, 'bold 64px "ClaudiaShouter"', "#00FF88", "center");
@@ -1117,7 +1121,7 @@ function drawLevel2Complete() {
   for(let y=0;y<CFG.H;y+=4){ctx.fillStyle="rgba(0,0,0,0.15)";ctx.fillRect(0,y,CFG.W,2);}
 
   const pulse = 0.7 + 0.3*Math.sin(Date.now()*0.004);
-  ctx.shadowColor="#FFE000"; ctx.shadowBlur=50*pulse;
+  ctx.shadowColor="#FFE000"; ctx.shadowBlur=16*pulse;
   txt("LEVEL 2", CFG.W/2, CFG.H/2-50, 'bold 80px "ClaudiaShouter"', "#FFE000", "center");
   ctx.shadowBlur=0; ctx.shadowColor="transparent";
   txt("COMPLETE!", CFG.W/2, CFG.H/2+30, 'bold 64px "ClaudiaShouter"', "#00FF88", "center");
@@ -1141,7 +1145,7 @@ function drawLevel2Splash() {
 
   // Pulsing glow
   const pulse = 0.7 + 0.3 * Math.sin(Date.now()*0.004);
-  ctx.shadowColor="#FFE000"; ctx.shadowBlur=50*pulse;
+  ctx.shadowColor="#FFE000"; ctx.shadowBlur=16*pulse;
   txt("LEVEL 2", CFG.W/2, CFG.H/2-20, 'bold 96px "ClaudiaShouter"', "#FFE000", "center");
   ctx.shadowBlur=0; ctx.shadowColor="transparent";
 
@@ -1162,7 +1166,7 @@ function drawLevel3Splash() {
   ctx.fillStyle="rgba(0,0,0,0.6)"; ctx.fillRect(0,0,CFG.W,CFG.H);
 
   const pulse = 0.7 + 0.3*Math.sin(Date.now()*0.004);
-  ctx.shadowColor="#FF4444"; ctx.shadowBlur=50*pulse;
+  ctx.shadowColor="#FF4444"; ctx.shadowBlur=16*pulse;
   txt("LEVEL 3", CFG.W/2, CFG.H/2-20, 'bold 96px "ClaudiaShouter"', "#FFE000", "center");
   ctx.shadowBlur=0; ctx.shadowColor="transparent";
   txt("GROCERY HEAD OFFICE", CFG.W/2, CFG.H/2+55, 'bold 24px "ClaudiaShouter"', "#FFF", "center");
@@ -1175,7 +1179,7 @@ function drawLevel3Complete() {
   for(let y=0;y<CFG.H;y+=4){ctx.fillStyle="rgba(0,0,0,0.15)";ctx.fillRect(0,y,CFG.W,2);}
 
   const pulse = 0.7 + 0.3*Math.sin(Date.now()*0.004);
-  ctx.shadowColor="#FFE000"; ctx.shadowBlur=50*pulse;
+  ctx.shadowColor="#FFE000"; ctx.shadowBlur=16*pulse;
   txt("LEVEL 3", CFG.W/2, CFG.H/2-50, 'bold 80px "ClaudiaShouter"', "#FFE000", "center");
   ctx.shadowBlur=0; ctx.shadowColor="transparent";
   txt("COMPLETE!", CFG.W/2, CFG.H/2+30, 'bold 64px "ClaudiaShouter"', "#00FF88", "center");
@@ -1370,11 +1374,13 @@ const _FRAME_MS = 1000 / 60; // cap at 60fps
 
 function loop(now = 0){
   if (now - _lastFrameTime < _FRAME_MS - 1) { requestAnimationFrame(loop); return; }
+  const dt = Math.min((now - _lastFrameTime) / _FRAME_MS, 3); // cap at 3x to prevent spiral after tab-switch
   _lastFrameTime = now;
   pollGamepad();
   handleInput();
-  if(S.screen==="play") update();
+  if(S.screen==="play") update(dt);
   ctx.clearRect(0,0,CFG.W,CFG.H);
+  ctx.imageSmoothingEnabled = false; // lock off every frame — prevents sprite blurring
 
   if(loaded<total){
     ctx.fillStyle="#000"; ctx.fillRect(0,0,CFG.W,CFG.H);
