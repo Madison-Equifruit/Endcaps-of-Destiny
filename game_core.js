@@ -271,6 +271,17 @@ function stopMusic() {
   if (musicEl) { musicEl.pause(); musicEl.currentTime = 0; musicEl = null; }
 }
 
+let leaderboardEl = null;
+function playLeaderboardMusic() {
+  if (leaderboardEl) { leaderboardEl.pause(); leaderboardEl.currentTime = 0; }
+  leaderboardEl = new Audio(LEADERBOARD_SRC);
+  leaderboardEl.volume = 0.7;
+  leaderboardEl.play().catch(() => {});
+}
+function stopLeaderboardMusic() {
+  if (leaderboardEl) { leaderboardEl.pause(); leaderboardEl.currentTime = 0; leaderboardEl = null; }
+}
+
 function pauseMusic() {
   if (musicEl && !musicEl.paused) musicEl.pause();
 }
@@ -445,6 +456,7 @@ function submitName() {
   if (LEADERBOARD.length>10) LEADERBOARD=LEADERBOARD.slice(0,10);
   localStorage.setItem("bb_leaderboard", JSON.stringify(LEADERBOARD));
   S.screen = "leaderboard";
+  playLeaderboardMusic();
   clearJP(); // prevent the Enter keypress from instantly skipping the leaderboard
 }
 
@@ -1380,7 +1392,7 @@ function handleInput() {
     case"cutscene3":    if(ok){ if(cutsceneVideo){cutsceneVideo.onended=null;cutsceneVideo.pause();cutsceneVideo.remove();cutsceneVideo=null;} S.screen="ending"; startEndingVideo(); clearJP(); } break;
     case"ending":       if(ok){ if(cutsceneVideo){cutsceneVideo.onended=null;cutsceneVideo.pause();cutsceneVideo.remove();cutsceneVideo=null;} stopMusic(); S.screen="name"; S.nameInput=""; S.nameFrame=undefined; clearJP(); } break;
     case"win":          if(ok){S.screen="name";S.nameInput="";} break;
-    case"leaderboard":  if(ok) S.screen="title"; break;
+    case"leaderboard":  if(ok) { stopLeaderboardMusic(); S.screen="title"; } break;
   }
 }
 
