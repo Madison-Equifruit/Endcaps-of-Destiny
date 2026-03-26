@@ -4,10 +4,10 @@ const CFG = {
   laneY: [360, 410, 460],
   playerX: 130,
   playerH: 110,           // target height; width auto from aspect ratio
-  switchCooldown: 140,
+  switchCooldown: 70,
   invulnMs: 2400,
-  bgSpeed: 0.8,
-  objSpeed: 1.2,
+  bgSpeed: 1.5,
+  objSpeed: 2.5,
   caseRate: 70,
   obstacleRate: 220,
   powerupRate: 1100,  // ~2-3 times in 60 seconds at 60fps
