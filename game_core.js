@@ -791,8 +791,8 @@ function drawInstrControls() {
   txt("🎮  CONTROLLER",rx+panelW/2,py+34,'bold 22px "ClaudiaShouter"',"#d8c7e0","center",false);
 
   [["D-PAD  ↑ / ↓","SWITCH LANES"],
-   ["A BUTTON","JUMP"],
-   ["START / A","CONFIRM / SKIP"]
+   ["A / B BUTTON","JUMP"],
+   ["START / A / B","CONFIRM / SKIP"]
   ].forEach(([key,action],i)=>{
     const ky=py+78+i*66;
     ctx.fillStyle="rgba(216,199,224,0.12)"; ctx.fillRect(rx+18,ky-20,panelW-36,50);
