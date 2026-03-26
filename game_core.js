@@ -4,10 +4,10 @@ const CFG = {
   laneY: [360, 410, 460],
   playerX: 130,
   playerH: 110,           // target height; width auto from aspect ratio
-  switchCooldown: 30,
+  switchCooldown: 45,
   invulnMs: 2400,
-  bgSpeed: 5.0,
-  objSpeed: 8.0,
+  bgSpeed: 3.0,
+  objSpeed: 5.0,
   caseRate: 25,
   obstacleRate: 55,
   powerupRate: 1100,  // ~2-3 times in 60 seconds at 60fps
@@ -839,9 +839,7 @@ function drawGameplay() {
     const sc=CFG.H/bgI.naturalHeight;
     const bw=bgI.naturalWidth*sc;
     let bx=Math.round(S.bgX);
-    ctx.imageSmoothingEnabled=false;
     while(bx<CFG.W){ctx.drawImage(bgI,bx,0,bw,CFG.H);bx+=bw;}
-    ctx.imageSmoothingEnabled=true;
     if(S.bgX<=-bw) S.bgX+=bw;
   } else {
     ctx.fillStyle="#8B4513"; ctx.fillRect(0,0,CFG.W,CFG.H);
@@ -1382,6 +1380,7 @@ function loop(now = 0){
   handleInput();
   if(S.screen==="play") update(dt);
   ctx.clearRect(0,0,CFG.W,CFG.H);
+  ctx.imageSmoothingEnabled = false; // lock off every frame — prevents sprite blurring
 
   if(loaded<total){
     ctx.fillStyle="#000"; ctx.fillRect(0,0,CFG.W,CFG.H);
