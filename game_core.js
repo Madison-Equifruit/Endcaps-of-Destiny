@@ -253,6 +253,7 @@ loadSfx("collect", SFX_COLLECT);
 loadSfx("powerup", SFX_POWERUP);
 loadSfx("hit", SFX_HIT);
 loadSfx("jump", SFX_JUMP);
+loadSfx("dead", SFX_DEAD);
 
 // ── MUSIC ─────────────────────────────────────────────────────
 let musicEl = null;
@@ -642,7 +643,7 @@ function update(dt) {
   S.popups.forEach(p=>{p.y-=0.7*dt;p.life-=dt;});
 
   // ── END CONDITIONS ────────────────────────────────────
-  if (S.karma<=0) { S.result="lose"; S.screen="name"; S.nameInput=""; S.nameFrame=undefined; stopMusic(); }
+  if (S.karma<=0) { S.result="lose"; S.screen="name"; S.nameInput=""; S.nameFrame=undefined; stopMusic(); playSfx("dead"); }
   else if (S.timeLeft<=0 && S.level===1) { S.result="win"; S.screen="level1complete"; }
   else if (S.timeLeft<=0 && S.level===2) { S.result="win"; S.screen="level2complete"; }
   else if (S.timeLeft<=0 && S.level===3) { S.result="win"; S.screen="level3complete"; }
