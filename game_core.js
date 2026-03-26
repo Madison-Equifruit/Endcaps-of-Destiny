@@ -16,7 +16,7 @@ const CFG = {
   startKarma: 5,
   maxKarma: 5,
   targetScore: 999999, // no score cap — timer runs out instead
-  gameDuration: 60,    // seconds
+  gameDuration: 30,    // seconds
   jumpVelocity: -15,   // pixels per frame upward
   gravity: 1.1,        // high gravity = snappy arc
   jumpCooldown: 8,     // frames before you can jump again after landing
