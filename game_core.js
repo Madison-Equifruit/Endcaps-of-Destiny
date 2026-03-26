@@ -8,8 +8,8 @@ const CFG = {
   invulnMs: 2400,
   bgSpeed: 5.0,
   objSpeed: 8.0,
-  caseRate: 70,
-  obstacleRate: 220,
+  caseRate: 25,
+  obstacleRate: 55,
   powerupRate: 1100,  // ~2-3 times in 60 seconds at 60fps
   casePoints: 50,
   organicPoints: 75,
@@ -369,7 +369,7 @@ function resetPlay() {
   S.score=0; S.karma=CFG.startKarma; S.lane=1;
   S.switchTimer=0; S.invuln=0; S.bgX=0;
   S.objects=[]; S.popups=[];
-  S.caseT=0; S.obstT=0; S.powerT=0;
+  S.caseT=CFG.caseRate; S.obstT=CFG.obstacleRate; S.powerT=0;
   S.frame=0; S.glow=0; S.hit=0;
   S.timeLeft=CFG.gameDuration;
   S.lastSecond=0;
@@ -392,7 +392,7 @@ function resetLevel2() {
   S.karma=CFG.startKarma; S.lane=1;
   S.switchTimer=0; S.invuln=0; S.bgX=0;
   S.objects=[]; S.popups=[];
-  S.caseT=0; S.obstT=0; S.powerT=0;
+  S.caseT=CFG.caseRate; S.obstT=CFG.obstacleRate; S.powerT=0;
   S.frame=0; S.glow=0; S.hit=0;
   S.timeLeft=CFG.gameDuration;
   S.lastSecond=0;
@@ -416,7 +416,7 @@ function resetLevel3() {
   S.karma=CFG.startKarma; S.lane=1;
   S.switchTimer=0; S.invuln=0; S.bgX=0;
   S.objects=[]; S.popups=[];
-  S.caseT=0; S.obstT=0; S.powerT=0;
+  S.caseT=CFG.caseRate; S.obstT=CFG.obstacleRate; S.powerT=0;
   S.frame=0; S.glow=0; S.hit=0;
   S.timeLeft=CFG.gameDuration;
   S.lastSecond=0;
@@ -520,8 +520,8 @@ function update(dt) {
   // Obstacles spawn faster AND cases spawn slower = worse ratio over time
   // At start: obstacle every ~120 frames, case every ~75 frames (ratio ~1.6 cases per obstacle)
   // At end:   obstacle every ~40 frames, case every ~110 frames (ratio ~0.4 cases per obstacle)
-  S.currentObstRate = Math.max(140, CFG.obstacleRate - rampT * 50);
-  S.currentCaseRate = Math.min(100, CFG.caseRate + rampT * 15);
+  S.currentObstRate = Math.max(25, CFG.obstacleRate - rampT * 30); // 55 → 25 over 60s
+  S.currentCaseRate = Math.min(45, CFG.caseRate + rampT * 20);    // 25 → 45 over 60s
 
   // ── BACKGROUND SCROLL ─────────────────────────────────
   const bgI = imgs["Level_1_Background_scroll.png"];
