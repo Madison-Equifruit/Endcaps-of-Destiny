@@ -383,6 +383,7 @@ function resetPlay() {
   S.jumpCooldown=0;
   S.onPlatform=false;
   S.platformObj=null;
+  S.elapsed=0;
   S.level=1;
   S.bg="Level_1_Background_scroll.png";
 }
@@ -406,6 +407,7 @@ function resetLevel2() {
   S.jumpCooldown=0;
   S.onPlatform=false;
   S.platformObj=null;
+  S.elapsed=0;
   S.level=2;
   S.bg="Level_2_Background_scroll.png";
 }
@@ -429,6 +431,7 @@ function resetLevel3() {
   S.jumpCooldown=0;
   S.onPlatform=false;
   S.platformObj=null;
+  S.elapsed=0;
   S.level=3;
   S.bg="Level_3_Head_Office.png";
 }
@@ -501,14 +504,14 @@ function spawn(type, opts={}) {
 }
 
 // ── UPDATE ────────────────────────────────────────────────────
-function update() {
+function update(dt) {
   S.frame++;
+  S.elapsed += dt / 60; // real seconds elapsed, frame-rate independent
 
   // ── DIFFICULTY RAMP ───────────────────────────────────
   // Smooth continuous ramp over 60s
-  const elapsed = S.frame / 60;
-  S.timeLeft = Math.max(0, CFG.gameDuration - elapsed);
-  const rampT = elapsed / CFG.gameDuration; // 0 to 1 over 60s
+  S.timeLeft = Math.max(0, CFG.gameDuration - S.elapsed);
+  const rampT = Math.min(1, S.elapsed / CFG.gameDuration); // 0 to 1 over 60s
 
   // Speed ramps up
   S.currentBgSpeed  = CFG.bgSpeed  + rampT * CFG.diffRampSpeed * 0.8;
@@ -523,19 +526,19 @@ function update() {
   // ── BACKGROUND SCROLL ─────────────────────────────────
   const bgI = imgs["Level_1_Background_scroll.png"];
   const bgW = bgI&&bgI.naturalWidth ? (bgI.naturalWidth*(CFG.H/bgI.naturalHeight)) : CFG.W;
-  S.bgX -= S.currentBgSpeed;
+  S.bgX -= S.currentBgSpeed * dt;
   if (S.bgX <= -bgW) S.bgX += bgW;
 
-  if (S.switchTimer>0) S.switchTimer-=16;
+  if (S.switchTimer>0) S.switchTimer-=16*dt;
   if (S.switchTimer<=0) {
     if (jp["ArrowUp"]||jp["KeyW"]) { if(S.lane>0){S.lane--;S.switchTimer=CFG.switchCooldown;} }
     else if (jp["ArrowDown"]||jp["KeyS"]) { if(S.lane<2){S.lane++;S.switchTimer=CFG.switchCooldown;} }
   }
 
   // ── JUMP ─────────────────────────────────────────────────
-  if (S.jumpCooldown>0) S.jumpCooldown--;
+  if (S.jumpCooldown>0) S.jumpCooldown = Math.max(0, S.jumpCooldown - dt);
   const wantsJump = jp["Space"];
-  if (wantsJump && !S.isJumping && !S.onPlatform && S.jumpCooldown===0) {
+  if (wantsJump && !S.isJumping && !S.onPlatform && S.jumpCooldown<=0) {
     playSfx("jump");
     S.jumpVel = CFG.jumpVelocity;
     S.isJumping = true;
@@ -543,8 +546,8 @@ function update() {
 
   // Apply physics when airborne
   if (S.isJumping) {
-    S.jumpY += S.jumpVel;
-    S.jumpVel += CFG.gravity;
+    S.jumpY += S.jumpVel * dt;
+    S.jumpVel += CFG.gravity * dt;
 
     // Check landing on apple stand top surface
     if (S.jumpVel >= 0) {
@@ -584,11 +587,11 @@ function update() {
     }
   }
 
-  if (S.invuln>0) S.invuln-=16;
-  if (S.glow>0) S.glow-=2;
-  if (S.hit>0) S.hit--;
+  if (S.invuln>0) S.invuln-=16*dt;
+  if (S.glow>0) S.glow-=2*dt;
+  if (S.hit>0) S.hit-=dt;
 
-  S.caseT++; S.obstT++; S.powerT++;
+  S.caseT+=dt; S.obstT+=dt; S.powerT+=dt;
   if (S.caseT>=S.currentCaseRate) { S.caseT=0; spawn("case"); }
   if (S.obstT>=S.currentObstRate) { S.obstT=Math.floor(Math.random()*25); spawn("obstacle"); }
   if (S.powerT>=CFG.powerupRate)  { S.powerT=0; spawn("powerup"); }
@@ -601,7 +604,7 @@ function update() {
 
   const py = CFG.laneY[S.lane] + S.jumpY; // player's bottom Y
   S.objects.forEach(o => {
-    o.x -= S.currentObjSpeed;
+    o.x -= S.currentObjSpeed * dt;
     if (o.done) return;
     const oy = CFG.laneY[o.lane] - (o.floatOffset || 0);
     const dx = Math.abs(CFG.playerX - o.x);
@@ -634,9 +637,9 @@ function update() {
     }
   });
   S.objects = S.objects.filter(o=>o.x>-200&&!o.done);
-  S.score += 0.025;
+  S.score += 0.025 * dt;
   S.popups = S.popups.filter(p=>p.life>0);
-  S.popups.forEach(p=>{p.y-=0.7;p.life--;});
+  S.popups.forEach(p=>{p.y-=0.7*dt;p.life-=dt;});
 
   // ── END CONDITIONS ────────────────────────────────────
   if (S.karma<=0) { S.result="lose"; S.screen="name"; S.nameInput=""; S.nameFrame=undefined; stopMusic(); }
@@ -1373,10 +1376,11 @@ const _FRAME_MS = 1000 / 60; // cap at 60fps
 
 function loop(now = 0){
   if (now - _lastFrameTime < _FRAME_MS - 1) { requestAnimationFrame(loop); return; }
+  const dt = Math.min((now - _lastFrameTime) / _FRAME_MS, 3); // cap at 3x to prevent spiral after tab-switch
   _lastFrameTime = now;
   pollGamepad();
   handleInput();
-  if(S.screen==="play") update();
+  if(S.screen==="play") update(dt);
   ctx.clearRect(0,0,CFG.W,CFG.H);
 
   if(loaded<total){
