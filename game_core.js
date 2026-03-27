@@ -28,9 +28,36 @@ const CFG = {
   obstacleH: 95,
   powerupH: 70,
   characters: [
-    {name:"ASSASSIN",  still:"Banana_Badass_Assassin_Select.png",  run:"Banana_Badass_Assassin_Still.png"},
-    {name:"BULLDOZER", still:"Banana_Badass_Bulldozer_Select.png", run:"Banana_Badass_Bulldozer_Still.png"},
-    {name:"CURIOUS",   still:"Banana_Badass_Curious_Select.png",   run:"Banana_Badass_Curious_Still.png"},
+    {name:"ASSASSIN", still:"Banana_Badass_Assassin_Select.png", run:"Banana_Badass_Assassin_Still.png",
+     sheet:"Assassin_Sprite_Sheet.png",
+     frames:[
+       {x:65,   w:433},
+       {x:682,  w:335},
+       {x:1190, w:442},
+       {x:1696, w:544},
+       {x:2334, w:328},
+       {x:2934, w:321},
+     ], frameH:1024},
+    {name:"BULLDOZER", still:"Banana_Badass_Bulldozer_Select.png", run:"Banana_Badass_Bulldozer_Still.png",
+     sheet:"Bulldozer_Sprite_Sheet.png",
+     frames:[
+       {x:22,   w:245},
+       {x:369,  w:209},
+       {x:702,  w:188},
+       {x:1050, w:254},
+       {x:1375, w:257},
+     ], frameH:446},
+    {name:"CURIOUS", still:"Banana_Badass_Curious_Select.png", run:"Banana_Badass_Curious_Still.png",
+     sheet:"Curious_Sprite_Sheet.png",
+     frames:[
+       {x:31,   w:125},
+       {x:215,  w:117},
+       {x:371,  w:182},
+       {x:599,  w:208},
+       {x:848,  w:143},
+       {x:1060, w:125},
+       {x:1226, w:180},
+     ], frameH:446},
     {name:"NERD", still:"Banana_Badass_Nerd_Select.png", run:"Banana_Badass_Nerd_Running.png",
      sheet:"Nerd_Sprite_Sheet.png",
      frames:[
@@ -53,7 +80,10 @@ const CFG = {
 // ── CANVAS ───────────────────────────────────────────────────
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
-canvas.width = CFG.W; canvas.height = CFG.H;
+const DPR = window.devicePixelRatio || 1;
+canvas.width  = Math.round(CFG.W * DPR);
+canvas.height = Math.round(CFG.H * DPR);
+ctx.scale(DPR, DPR);
 ctx.imageSmoothingEnabled = false;
 
 // Fullscreen support
@@ -124,8 +154,7 @@ function pollGamepad() {
           else if (i === 13) gpNameMove( 1,  0);  // down
           else if (i === 14) gpNameMove( 0, -1);  // left
           else if (i === 15) gpNameMove( 0,  1);  // right
-          else if (i === 0)  gpNamePick();         // A: select letter
-          else if (i === 1)  { S.nameInput = S.nameInput.slice(0, -1); } // B: delete
+          else if (i === 0 || i === 1) gpNamePick(); // A or B: select letter
           else if ([2,3,8,9,11].includes(i)) submitName(); // Start/Select: submit
         } else {
           // All other screens
@@ -178,7 +207,10 @@ function resize() {
   const s = Math.min(window.innerWidth / CFG.W, window.innerHeight / CFG.H);
   canvas.style.width  = (CFG.W * s) + "px";
   canvas.style.height = (CFG.H * s) + "px";
-  // Re-disable smoothing after resize (some browsers reset it)
+  // Re-apply DPR scale and disable smoothing (some browsers reset on resize)
+  canvas.width  = Math.round(CFG.W * DPR);
+  canvas.height = Math.round(CFG.H * DPR);
+  ctx.scale(DPR, DPR);
   ctx.imageSmoothingEnabled = false;
 }
 resize();
@@ -196,11 +228,12 @@ Object.entries(ASSETS).forEach(([name, src]) => {
     // Pre-render background images to an offscreen canvas at game resolution
     // so drawGameplay never has to scale a 6-8 MB PNG every frame
     if (name.includes('Background') || name.includes('Head_Office')) {
-      const sc = CFG.H / img.naturalHeight;
+      const sc = (CFG.H * DPR) / img.naturalHeight;
       const bw = Math.ceil(img.naturalWidth * sc);
+      const bh = Math.ceil(CFG.H * DPR);
       const oc = document.createElement('canvas');
-      oc.width = bw; oc.height = CFG.H;
-      oc.getContext('2d').drawImage(img, 0, 0, bw, CFG.H);
+      oc.width = bw; oc.height = bh;
+      oc.getContext('2d').drawImage(img, 0, 0, bw, bh);
       bgCache[name] = oc;
     }
   };
@@ -888,7 +921,7 @@ function drawGameplay() {
   const bgSrc = bgCache[bgName];
   const bgI = imgs[bgName];
   if(bgSrc){
-    const bw = bgSrc.width;
+    const bw = bgSrc.width / DPR; // logical tile width
     let bx = Math.round(S.bgX);
     while(bx<CFG.W){ctx.drawImage(bgSrc,bx,0,bw,CFG.H);bx+=bw;}
     if(S.bgX<=-bw) S.bgX+=bw;
