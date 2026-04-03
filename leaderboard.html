@@ -89,6 +89,16 @@ td.score-col { text-align: right; }
     <tbody id="rows"></tbody>
   </table>
   <div id="empty" class="empty" style="display:none">NO SCORES YET — BE THE FIRST!</div>
+  <div style="text-align:center; margin-top:32px;">
+    <button id="resetBtn" tabindex="-1"
+      style="background:none; border:2px solid #553; color:#664; font-family:inherit;
+             font-size:clamp(9px,1.2vw,13px); letter-spacing:2px; padding:8px 22px;
+             cursor:pointer; border-radius:3px; transition:border-color 0.2s, color 0.2s;"
+      onmouseover="this.style.borderColor='#c33';this.style.color='#c33';"
+      onmouseout="this.style.borderColor='#553';this.style.color='#664';">
+      RESET LEADERBOARD
+    </button>
+  </div>
 </div>
 <script>
 const MEDALS = ["🥇","🥈","🥉"];
@@ -125,10 +135,17 @@ function render() {
 }
 
 render();
-// Poll every second for same-tab writes (storage event only fires in OTHER tabs)
 setInterval(render, 500);
-// Also catch cross-tab updates instantly
 window.addEventListener("storage", e => { if (e.key === "bb_leaderboard") render(); });
+
+document.getElementById("resetBtn").addEventListener("click", function(e) {
+  // Mouse-only: ignore synthetic keyboard-triggered clicks
+  if (e.detail === 0) return;
+  if (!confirm("Reset the leaderboard? This cannot be undone.")) return;
+  localStorage.removeItem("bb_leaderboard");
+  lastJson = null;
+  render();
+});
 </script>
 </body>
 </html>
