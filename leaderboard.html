@@ -126,7 +126,7 @@ function render() {
 
 render();
 // Poll every second for same-tab writes (storage event only fires in OTHER tabs)
-setInterval(render, 1000);
+setInterval(render, 500);
 // Also catch cross-tab updates instantly
 window.addEventListener("storage", e => { if (e.key === "bb_leaderboard") render(); });
 </script>
