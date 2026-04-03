@@ -257,8 +257,7 @@ function getAudioCtx() {
 let musicStarted = false;
 function tryStartMusic() {
   getAudioCtx();
-  musicStarted = true;
-  startMusic(); // no-op if already playing; restarts after stopMusic()
+  if (!musicStarted) { musicStarted = true; startMusic(); }
 }
 document.addEventListener("click",   tryStartMusic);
 document.addEventListener("keydown", tryStartMusic);
@@ -1391,7 +1390,7 @@ function handleInput() {
   const ok = jp["Enter"] || (S.screen !== "play" && jp["Space"]);
   const L=jp["ArrowLeft"], R=jp["ArrowRight"];
   switch(S.screen){
-    case"title":       if(ok) { S.screen="intro"; startIntroVideo(); } break;
+    case"title":       if(ok) { startMusic(); S.screen="intro"; startIntroVideo(); } break;
     case"charselect":
       if(L) S.charIdx=(S.charIdx-1+4)%4;
       if(R) S.charIdx=(S.charIdx+1)%4;
@@ -1420,7 +1419,7 @@ canvas.addEventListener("click",e=>{
   const mx=(e.clientX-r.left)*sx, my=(e.clientY-r.top)*sy;
   function hit(x,y,w,h){return mx>=x&&mx<=x+w&&my>=y&&my<=y+h;}
   switch(S.screen){
-    case"title": if(hit(CFG.W/2-90,378,180,50)) { S.screen="intro"; startIntroVideo(); }
+    case"title": if(hit(CFG.W/2-90,378,180,50)) { startMusic(); S.screen="intro"; startIntroVideo(); }
                  if(hit(CFG.W-130, CFG.H-36, 120, 28)) goFullscreen();
                  break;
     case"charselect":{
