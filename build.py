@@ -51,11 +51,13 @@ font_b64 = b64(os.path.join(ASSETS_FONTS, "ClaudiaShouter-Black.otf"))
 
 # ── AUDIO ─────────────────────────────────────────────────────
 print("  Loading audio...")
-collect_b64  = b64_audio("collect.wav")
-powerup_b64  = b64_audio("powerup.wav")
-hit_b64      = b64_audio("hit.wav")
-jump_b64     = b64_audio("jump.wav")
-music_b64    = b64_audio("music.wav")
+collect_b64      = b64_audio("collect.wav")
+powerup_b64      = b64_audio("powerup.wav")
+hit_b64          = b64_audio("hit.wav")
+jump_b64         = b64_audio("jump.wav")
+dead_b64         = b64_audio("dead.wav")
+leaderboard_b64  = b64_audio("leaderboard.mp3")
+music_b64        = b64_audio("music.wav")
 
 # ── VIDEOS ────────────────────────────────────────────────────
 print("  Loading videos...")
@@ -94,6 +96,9 @@ image_files = [
     "Banana_Badass_Nerd_Select.png",
     "Banana_Badass_Nerd_Running.png",
     "Nerd_Sprite_Sheet.png",
+    "Assassin_Sprite_Sheet.png",
+    "Bulldozer_Sprite_Sheet.png",
+    "Curious_Sprite_Sheet.png",
     "Claudia_Power_Up.png",
     "Conventional_Case.png",
     "Organic_Case.png",
@@ -147,6 +152,8 @@ const SFX_COLLECT  = "{collect_b64}";
 const SFX_POWERUP  = "{powerup_b64}";
 const SFX_HIT      = "{hit_b64}";
 const SFX_JUMP     = "{jump_b64}";
+const SFX_DEAD         = "{dead_b64}";
+const LEADERBOARD_SRC  = "{leaderboard_b64}";
 const INTRO_VIDEO_B64         = "{intro_b64}";
 const CUTSCENE_ASSASSIN_B64   = "{cs1_assassin}";
 const CUTSCENE_BULLDOZER_B64  = "{cs1_bulldozer}";
@@ -178,3 +185,14 @@ with open(out_path, "w", encoding="utf-8") as f:
 size_mb = os.path.getsize(out_path) / 1024 / 1024
 print(f"\n✅ Done! output/index.html — {size_mb:.1f} MB")
 print(f"   Open in Chrome: file://{out_path}")
+
+# ── LEADERBOARD PAGE ──────────────────────────────────────────
+print("\n  Building leaderboard.html...")
+lb_src_path = os.path.join(ROOT, "leaderboard_src.html")
+with open(lb_src_path, "r", encoding="utf-8") as f:
+    lb_html = f.read()
+lb_html = lb_html.replace("FONT_DATA_URL", f"data:font/otf;base64,{font_b64}")
+lb_out_path = os.path.join(OUTPUT_DIR, "leaderboard.html")
+with open(lb_out_path, "w", encoding="utf-8") as f:
+    f.write(lb_html)
+print(f"✅ Done! output/leaderboard.html")

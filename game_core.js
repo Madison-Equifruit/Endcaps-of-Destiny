@@ -811,39 +811,23 @@ function drawInstrControls() {
   ctx.strokeStyle="#FFE000"; ctx.lineWidth=3; ctx.strokeRect(24,14,CFG.W-48,CFG.H-28);
   txt("✦  HOW TO PLAY  ✦",CFG.W/2,60,'bold 42px "ClaudiaShouter"',"#FFE000","center");
 
-  const panelW=360, panelH=280, gap=40;
-  const lx=(CFG.W/2)-panelW-(gap/2);
-  const rx=(CFG.W/2)+(gap/2);
+  const panelW=360, panelH=280;
+  const px=(CFG.W/2)-panelW/2;
   const py=88;
 
-  // ── KEYBOARD PANEL ───────────────────────────────────────────
-  ctx.fillStyle="rgba(255,255,255,0.03)"; ctx.fillRect(lx,py,panelW,panelH);
-  ctx.strokeStyle="#9ac9b5"; ctx.lineWidth=2; ctx.strokeRect(lx,py,panelW,panelH);
-  txt("⌨  KEYBOARD",lx+panelW/2,py+34,'bold 22px "ClaudiaShouter"',"#9ac9b5","center",false);
-
-  [["↑ / ↓  ARROW KEYS","SWITCH LANES"],
-   ["SPACE BAR","JUMP"],
-   ["ENTER","CONFIRM / SKIP"]
-  ].forEach(([key,action],i)=>{
-    const ky=py+78+i*66;
-    ctx.fillStyle="rgba(154,201,181,0.12)"; ctx.fillRect(lx+18,ky-20,panelW-36,50);
-    txt(key,   lx+panelW/2,ky,   'bold 15px "ClaudiaShouter"',"#FFE000","center",false);
-    txt(action,lx+panelW/2,ky+20,'13px "ClaudiaShouter"',"#DDD","center",false);
-  });
-
   // ── CONTROLLER PANEL ─────────────────────────────────────────
-  ctx.fillStyle="rgba(255,255,255,0.03)"; ctx.fillRect(rx,py,panelW,panelH);
-  ctx.strokeStyle="#d8c7e0"; ctx.lineWidth=2; ctx.strokeRect(rx,py,panelW,panelH);
-  txt("🎮  CONTROLLER",rx+panelW/2,py+34,'bold 22px "ClaudiaShouter"',"#d8c7e0","center",false);
+  ctx.fillStyle="rgba(255,255,255,0.03)"; ctx.fillRect(px,py,panelW,panelH);
+  ctx.strokeStyle="#d8c7e0"; ctx.lineWidth=2; ctx.strokeRect(px,py,panelW,panelH);
+  txt("🎮  CONTROLLER",px+panelW/2,py+34,'bold 22px "ClaudiaShouter"',"#d8c7e0","center",false);
 
   [["D-PAD  ↑ / ↓","SWITCH LANES"],
    ["A / B BUTTON","JUMP"],
-   ["START / A / B","CONFIRM / SKIP"]
+   ["START / A / B","CONFIRM"]
   ].forEach(([key,action],i)=>{
     const ky=py+78+i*66;
-    ctx.fillStyle="rgba(216,199,224,0.12)"; ctx.fillRect(rx+18,ky-20,panelW-36,50);
-    txt(key,   rx+panelW/2,ky,   'bold 15px "ClaudiaShouter"',"#FFE000","center",false);
-    txt(action,rx+panelW/2,ky+20,'13px "ClaudiaShouter"',"#DDD","center",false);
+    ctx.fillStyle="rgba(216,199,224,0.12)"; ctx.fillRect(px+18,ky-20,panelW-36,50);
+    txt(key,   px+panelW/2,ky,   'bold 15px "ClaudiaShouter"',"#FFE000","center",false);
+    txt(action,px+panelW/2,ky+20,'13px "ClaudiaShouter"',"#DDD","center",false);
   });
 
   txt("DODGE OBSTACLES AND COLLECT CASES TO SCORE!",CFG.W/2,py+panelH+26,'bold 15px "ClaudiaShouter"',"#fbbb30","center",false);
@@ -1351,14 +1335,10 @@ function startEndingVideo() {
   vid.preload = "auto";
   document.body.appendChild(vid);
   cutsceneVideo = vid;
+  S.endingDone = false;
   vid.play().catch(() => {});
   vid.onended = () => {
-    vid.remove();
-    cutsceneVideo = null;
-    stopMusic();
-    S.screen = "name";
-    S.nameInput = "";
-    S.nameFrame = undefined;
+    S.endingDone = true;
   };
 }
 
@@ -1370,7 +1350,11 @@ function drawCutscene() {
     ctx.fillRect(0, 0, CFG.W, CFG.H);
     txt("LOADING...", CFG.W/2, CFG.H/2, '24px "ClaudiaShouter"', "#FFE000", "center", false);
   }
-  txt("PRESS ENTER TO SKIP", CFG.W - 20, CFG.H - 16, '11px "ClaudiaShouter"', "rgba(255,255,255,0.4)", "right", false);
+  if (S.screen === "ending" && S.endingDone) {
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(0, 0, CFG.W, CFG.H);
+    txt("▶  PRESS ENTER TO CONTINUE", CFG.W/2, CFG.H/2, 'bold 28px "ClaudiaShouter"', "#FFE000", "center", false);
+  }
 }
 
 function startCutscene2() {
@@ -1420,10 +1404,7 @@ function handleInput() {
     case"level2splash":   if(ok){ resetLevel2(); S.screen="play"; clearJP(); } break;
     case"level3splash":   if(ok){ resetLevel3(); S.screen="play"; clearJP(); } break;
     case"level3complete": if(ok){ S.screen="cutscene3"; startCutscene3(); clearJP(); } break;
-    case"cutscene":     if(ok){ if(cutsceneVideo){cutsceneVideo.onended=null;cutsceneVideo.pause();cutsceneVideo.remove();cutsceneVideo=null;} resumeMusic(); S.screen="level2splash"; clearJP(); } break;
-    case"cutscene2":    if(ok){ if(cutsceneVideo){cutsceneVideo.onended=null;cutsceneVideo.pause();cutsceneVideo.remove();cutsceneVideo=null;} resumeMusic(); S.screen="level3splash"; clearJP(); } break;
-    case"cutscene3":    if(ok){ if(cutsceneVideo){cutsceneVideo.onended=null;cutsceneVideo.pause();cutsceneVideo.remove();cutsceneVideo=null;} S.screen="ending"; startEndingVideo(); clearJP(); } break;
-    case"ending":       if(ok){ if(cutsceneVideo){cutsceneVideo.onended=null;cutsceneVideo.pause();cutsceneVideo.remove();cutsceneVideo=null;} stopMusic(); S.screen="name"; S.nameInput=""; S.nameFrame=undefined; clearJP(); } break;
+    case"ending":       if(ok && S.endingDone){ if(cutsceneVideo){cutsceneVideo.pause();cutsceneVideo.remove();cutsceneVideo=null;} stopMusic(); S.screen="name"; S.nameInput=""; S.nameFrame=undefined; S.endingDone=false; clearJP(); } break;
     case"win":          if(ok){S.screen="name";S.nameInput="";} break;
     case"leaderboard":  if(ok) { stopLeaderboardMusic(); S.screen="title"; } break;
   }
