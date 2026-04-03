@@ -257,7 +257,8 @@ function getAudioCtx() {
 let musicStarted = false;
 function tryStartMusic() {
   getAudioCtx();
-  if (!musicStarted) { musicStarted = true; startMusic(); }
+  musicStarted = true;
+  startMusic(); // no-op if already playing; restarts after stopMusic()
 }
 document.addEventListener("click",   tryStartMusic);
 document.addEventListener("keydown", tryStartMusic);
