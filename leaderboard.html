@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Banana Badass — Leaderboard</title>
+<style>
+@font-face {
+  font-family: "ClaudiaShouter";
+  src: url("assets/fonts/ClaudiaShouter-Black.otf") format("opentype");
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 100%; height: 100%;
+  background: #1a1008;
+  font-family: "ClaudiaShouter", monospace;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.container {
+  width: 90%; max-width: 800px;
+  border: 3px solid #FFE000;
+  padding: 40px 50px 50px;
+  background: #2e2624;
+  box-shadow: 0 0 60px rgba(255,224,0,0.15);
+}
+h1 {
+  color: #FFE000;
+  font-size: clamp(22px, 4vw, 48px);
+  text-align: center;
+  text-shadow: 0 0 20px rgba(255,224,0,0.5);
+  margin-bottom: 8px;
+}
+.live-badge {
+  text-align: center;
+  color: #4f8;
+  font-size: clamp(10px, 1.5vw, 16px);
+  margin-bottom: 36px;
+  letter-spacing: 2px;
+}
+.live-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  background: #4f8;
+  border-radius: 50%;
+  margin-right: 6px;
+  animation: blink 1.2s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(14px, 2.5vw, 28px);
+}
+thead th {
+  color: #888;
+  font-size: 0.5em;
+  letter-spacing: 3px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #444;
+  text-align: left;
+}
+thead th.score-col { text-align: right; }
+tbody tr { border-bottom: 1px solid rgba(255,255,255,0.06); }
+tbody tr.rank-1 td { color: #FFE000; }
+tbody tr.rank-2 td, tbody tr.rank-3 td { color: #FFA040; }
+tbody tr.rank-other td { color: #ccc; }
+td { padding: 14px 10px; }
+td.score-col { text-align: right; }
+.empty {
+  color: #555;
+  text-align: center;
+  font-size: clamp(14px, 2vw, 24px);
+  padding: 40px 0;
+}
+.flash { animation: flash 0.4s ease-out; }
+@keyframes flash { 0%{background:rgba(255,224,0,0.1)} 100%{background:transparent} }
+</style>
+</head>
+<body>
+<div class="container" id="container">
+  <h1>🏆 HALL OF BANANA BADASSES 🏆</h1>
+  <div class="live-badge"><span class="live-dot"></span>LIVE LEADERBOARD</div>
+  <table id="board">
+    <thead>
+      <tr><th>RANK</th><th>NAME</th><th class="score-col">SCORE</th></tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div id="empty" class="empty" style="display:none">NO SCORES YET — BE THE FIRST!</div>
+</div>
+<script>
+const MEDALS = ["🥇","🥈","🥉"];
+let lastJson = null;
+
+function render() {
+  const json = localStorage.getItem("bb_leaderboard") || "[]";
+  const data = JSON.parse(json);
+  const rows = document.getElementById("rows");
+  const empty = document.getElementById("empty");
+
+  if (json === lastJson) return; // nothing changed
+  lastJson = json;
+
+  // Flash the container to signal update
+  const c = document.getElementById("container");
+  c.classList.remove("flash");
+  void c.offsetWidth; // reflow to restart animation
+  c.classList.add("flash");
+
+  rows.innerHTML = "";
+  if (data.length === 0) {
+    empty.style.display = "block";
+  } else {
+    empty.style.display = "none";
+    data.forEach((entry, i) => {
+      const tr = document.createElement("tr");
+      tr.className = i === 0 ? "rank-1" : i < 3 ? "rank-2" : "rank-other";
+      const rank = i < 3 ? MEDALS[i] : `${i + 1}.`;
+      tr.innerHTML = `<td>${rank}</td><td>${entry.name}</td><td class="score-col">${Number(entry.score).toLocaleString()}</td>`;
+      rows.appendChild(tr);
+    });
+  }
+}
+
+render();
+// Poll every second for same-tab writes (storage event only fires in OTHER tabs)
+setInterval(render, 1000);
+// Also catch cross-tab updates instantly
+window.addEventListener("storage", e => { if (e.key === "bb_leaderboard") render(); });
+</script>
+</body>
+</html>
