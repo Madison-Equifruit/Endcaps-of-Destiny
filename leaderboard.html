@@ -104,23 +104,20 @@ td.score-col { text-align: right; }
 const MEDALS = ["🥇","🥈","🥉"];
 let lastJson = null;
 
-function render() {
-  const json = localStorage.getItem("bb_leaderboard") || "[]";
-  const data = JSON.parse(json);
-  const rows = document.getElementById("rows");
-  const empty = document.getElementById("empty");
-
-  if (json === lastJson) return; // nothing changed
+function display(data) {
+  const json = JSON.stringify(data);
+  if (json === lastJson) return;
   lastJson = json;
 
-  // Flash the container to signal update
   const c = document.getElementById("container");
   c.classList.remove("flash");
-  void c.offsetWidth; // reflow to restart animation
+  void c.offsetWidth;
   c.classList.add("flash");
 
+  const rows = document.getElementById("rows");
+  const empty = document.getElementById("empty");
   rows.innerHTML = "";
-  if (data.length === 0) {
+  if (!data.length) {
     empty.style.display = "block";
   } else {
     empty.style.display = "none";
@@ -134,17 +131,25 @@ function render() {
   }
 }
 
+function render() {
+  fetch("/api/leaderboard")
+    .then(r => r.json())
+    .then(data => { localStorage.setItem("bb_leaderboard", JSON.stringify(data)); display(data); })
+    .catch(() => display(JSON.parse(localStorage.getItem("bb_leaderboard") || "[]")));
+}
+
 render();
-setInterval(render, 500);
+setInterval(render, 1000);
 window.addEventListener("storage", e => { if (e.key === "bb_leaderboard") render(); });
 
 document.getElementById("resetBtn").addEventListener("click", function(e) {
-  // Mouse-only: ignore synthetic keyboard-triggered clicks
   if (e.detail === 0) return;
   if (!confirm("Reset the leaderboard? This cannot be undone.")) return;
+  fetch("/api/leaderboard", {method:"POST", headers:{"Content-Type":"application/json"}, body:"[]"})
+    .catch(()=>{});
   localStorage.removeItem("bb_leaderboard");
   lastJson = null;
-  render();
+  display([]);
 });
 </script>
 </body>
