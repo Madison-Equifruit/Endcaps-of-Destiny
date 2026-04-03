@@ -386,7 +386,7 @@ window.addEventListener("keydown", e => {
   keys[e.code] = true;
   if (S.screen === "name") {
     if (e.code === "Backspace") S.nameInput = S.nameInput.slice(0,-1);
-    else if (e.code==="Enter"||e.code==="Space") submitName();
+    else if (e.code==="Enter") submitName();
     else if (e.key.length===1 && S.nameInput.length<12) S.nameInput += e.key.toUpperCase();
     e.preventDefault();
   }
@@ -1397,7 +1397,7 @@ function startCutscene2() {
 
 // ── INPUT ROUTING ─────────────────────────────────────────────
 function handleInput() {
-  const ok = jp["Enter"] || (S.screen !== "play" && jp["Space"]);
+  const ok = jp["Enter"] || (S.screen !== "play" && S.screen !== "name" && jp["Space"]);
   const L=jp["ArrowLeft"], R=jp["ArrowRight"];
   switch(S.screen){
     case"title":       if(ok) { startMusic(); S.screen="intro"; startIntroVideo(); } break;
