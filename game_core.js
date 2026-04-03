@@ -106,6 +106,7 @@ const gpState = {};
 const GP_GRID = [
   ['A','B','C','D','E','F','G','H','I','J','K','L','M'],
   ['N','O','P','Q','R','S','T','U','V','W','X','Y','Z'],
+  ['0','1','2','3','4','5','6','7','8','9','_'],
   ['SPC','DEL','DONE']
 ];
 
@@ -1054,16 +1055,17 @@ function drawName() {
 
   // ── On-screen letter grid ──────────────────────────────────
   // Row 0 & 1: 13 letters each  (cell 36×34, gap 3)
-  // Row 2:     SPC / DEL / DONE (wider cells)
+  // Row 2:     0-9 and _
+  // Row 3:     SPC / DEL / DONE (wider cells)
   const CW = 36, CH = 34, GAP = 3;
-  const rowY = [238, 276, 318]; // top-y of each row
+  const rowY = [222, 260, 298, 340]; // top-y of each row
 
   GP_GRID.forEach((row, ri) => {
     // Work out the total row pixel width so we can centre it
-    const cellWidths = row.map(ch => ri === 2 ? (ch === 'DONE' ? 116 : 92) : CW);
+    const cellWidths = row.map(ch => ri === 3 ? (ch === 'DONE' ? 116 : 92) : CW);
     const rowW = cellWidths.reduce((s, w) => s + w, 0) + (row.length - 1) * GAP;
     let cx = Math.floor((CFG.W - rowW) / 2);
-    const cellH = ri === 2 ? 38 : CH;
+    const cellH = ri === 3 ? 38 : CH;
 
     row.forEach((ch, ci) => {
       const cellW = cellWidths[ci];
@@ -1083,7 +1085,7 @@ function drawName() {
 
       // Label (txt() uppercases automatically)
       const label    = ch === 'SPC' ? 'SPC' : ch === 'DEL' ? 'DEL' : ch === 'DONE' ? 'DONE' : ch;
-      const fontSize = ri === 2 ? '13px' : '15px';
+      const fontSize = ri === 3 ? '13px' : '15px';
       txt(label, cx + cellW/2, rowY[ri] + cellH - 9,
           `bold ${fontSize} "ClaudiaShouter"`, isSel ? "#000" : "#CCC", "center", false);
 
@@ -1093,14 +1095,14 @@ function drawName() {
 
   // Controller hint
   txt("GAMEPAD:  D-PAD=MOVE   A=SELECT   B=DELETE   START=SUBMIT",
-      CFG.W/2, 372, '12px "ClaudiaShouter"', "#888", "center", false);
+      CFG.W/2, 396, '12px "ClaudiaShouter"', "#888", "center", false);
   txt("KEYBOARD: TYPE NAME + PRESS ENTER",
-      CFG.W/2, 390, '12px "ClaudiaShouter"', "#555", "center", false);
+      CFG.W/2, 412, '12px "ClaudiaShouter"', "#555", "center", false);
 
   // Auto-submit countdown & submit button
   const secsLeft = Math.max(0, 60 - Math.floor(S.nameFrame / 60));
-  txt("AUTO-SUBMIT IN " + secsLeft + "S", CFG.W/2, 416, '12px "ClaudiaShouter"', "#444", "center", false);
-  btn("SUBMIT", CFG.W/2 - 60, 426, 120, 40);
+  txt("AUTO-SUBMIT IN " + secsLeft + "S", CFG.W/2, 436, '12px "ClaudiaShouter"', "#444", "center", false);
+  btn("SUBMIT", CFG.W/2 - 60, 446, 120, 40);
 
   if (S.nameFrame >= 3600) submitName();
 }
@@ -1436,7 +1438,7 @@ canvas.addEventListener("click",e=>{
     case"level2splash": if(hit(CFG.W/2-90,CFG.H/2+100,180,44)){ resetLevel2(); S.screen="play"; clearJP(); } break;
     case"gameover":     if(hit(CFG.W/2-95,368,190,50)){S.screen="name";S.nameInput="";} break;
     case"win":          if(hit(CFG.W/2-95,390,190,50)){S.screen="name";S.nameInput="";} break;
-    case"name":         if(hit(CFG.W/2-60,404,120,44)) submitName(); break;
+    case"name":         if(hit(CFG.W/2-60,446,120,40)) submitName(); break;
     case"leaderboard":  if(hit(CFG.W/2-85,470,170,46)) S.screen="title"; break;
   }
 });
