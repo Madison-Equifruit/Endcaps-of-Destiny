@@ -398,6 +398,15 @@ function clearJP() { for(const k in jp) delete jp[k]; }
 // ── STATE ────────────────────────────────────────────────────
 let S = {};
 let LEADERBOARD = JSON.parse(localStorage.getItem("bb_leaderboard") || "[]");
+// Sync from server file on startup (persists across browser sessions)
+fetch("/api/leaderboard").then(r=>r.json()).then(serverData=>{
+  if(!Array.isArray(serverData)||serverData.length===0) return;
+  const merged=[...LEADERBOARD,...serverData];
+  const seen=new Set();
+  LEADERBOARD=merged.filter(e=>{const k=e.name+":"+e.score;return seen.has(k)?false:(seen.add(k),true);})
+    .sort((a,b)=>b.score-a.score).slice(0,10);
+  localStorage.setItem("bb_leaderboard",JSON.stringify(LEADERBOARD));
+}).catch(()=>{});
 function initState() {
   S = {
     screen:"title", charIdx:0, char:null,
@@ -489,6 +498,7 @@ function submitName() {
   LEADERBOARD.sort((a,b)=>b.score-a.score);
   if (LEADERBOARD.length>10) LEADERBOARD=LEADERBOARD.slice(0,10);
   localStorage.setItem("bb_leaderboard", JSON.stringify(LEADERBOARD));
+  fetch("/api/leaderboard",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(LEADERBOARD)}).catch(()=>{});
   S.screen = "leaderboard";
   playLeaderboardMusic();
   clearJP(); // prevent the Enter keypress from instantly skipping the leaderboard
