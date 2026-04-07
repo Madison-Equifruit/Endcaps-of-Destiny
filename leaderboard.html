@@ -125,7 +125,11 @@ function display(data) {
       const tr = document.createElement("tr");
       tr.className = i === 0 ? "rank-1" : i < 3 ? "rank-2" : "rank-other";
       const rank = i < 3 ? MEDALS[i] : `${i + 1}.`;
-      tr.innerHTML = `<td>${rank}</td><td>${entry.name}</td><td class="score-col">${Number(entry.score).toLocaleString()}</td>`;
+      const tdRank  = document.createElement("td"); tdRank.textContent  = rank;
+      const tdName  = document.createElement("td"); tdName.textContent  = entry.name;
+      const tdScore = document.createElement("td"); tdScore.className   = "score-col";
+                                                     tdScore.textContent = Number(entry.score).toLocaleString();
+      tr.append(tdRank, tdName, tdScore);
       rows.appendChild(tr);
     });
   }
