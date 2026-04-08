@@ -494,6 +494,8 @@ function resetLevel3() {
 function submitName() {
   const charName = S.char ? S.char.name : "BANANA";
   const name = S.nameInput.trim() || charName;
+  // Re-read from storage so a reset from the leaderboard page is respected
+  LEADERBOARD = JSON.parse(localStorage.getItem("bb_leaderboard") || "[]");
   LEADERBOARD.push({name, score: Math.floor(S.score)});
   LEADERBOARD.sort((a,b)=>b.score-a.score);
   if (LEADERBOARD.length>10) LEADERBOARD=LEADERBOARD.slice(0,10);
