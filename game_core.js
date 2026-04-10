@@ -294,11 +294,19 @@ let musicEl = null;
 
 function startMusic() {
   if (musicEl) return; // already playing
-  const audio = new Audio(MUSIC_SRC);
-  audio.loop = false; // plays once start to finish
-  audio.volume = 0.5;
-  audio.play().catch(() => {});
-  musicEl = audio;
+  function _play(src) {
+    const audio = new Audio(src);
+    audio.loop = false; // plays once start to finish
+    audio.volume = 0.5;
+    audio.play().catch(() => {});
+    musicEl = audio;
+  }
+  // Convert data URLs to blob URLs for reliable large-media playback
+  if (typeof MUSIC_SRC === "string" && MUSIC_SRC.startsWith("data:")) {
+    fetch(MUSIC_SRC).then(r => r.blob()).then(b => _play(URL.createObjectURL(b))).catch(() => _play(MUSIC_SRC));
+  } else {
+    _play(MUSIC_SRC);
+  }
 }
 
 function stopMusic() {
