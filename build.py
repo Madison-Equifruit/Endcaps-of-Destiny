@@ -171,7 +171,7 @@ const ENDING_ASSASSIN_SRC     = "data:video/mp4;base64,{end_assassin}";
 const ENDING_BULLDOZER_SRC    = "data:video/mp4;base64,{end_bulldozer}";
 const ENDING_CURIOUS_SRC      = "data:video/mp4;base64,{end_curious}";
 const ENDING_NERD_SRC         = "data:video/mp4;base64,{end_nerd}";
-const MUSIC_SRC = "data:audio/mp4;base64,{music_b64}";
+const MUSIC_SRC = "data:video/mp4;base64,{music_b64}";
 {assets_js}
 {game_js}
 </script>
