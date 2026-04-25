@@ -1309,91 +1309,70 @@ function drawLevel3Complete() {
 
 let cutsceneVideo = null;
 
-function startCutscene() {
-  if (cutsceneVideo) {
-    cutsceneVideo.pause();
-    cutsceneVideo.remove();
-  }
-  pauseMusic();
-
-  // Pick cutscene based on selected character
-  const charName = (S.char ? S.char.name : "NERD").toLowerCase();
-  const cutsceneMap = {
-    assassin: CUTSCENE_ASSASSIN_SRC,
-    bulldozer: CUTSCENE_BULLDOZER_SRC,
-    curious:   CUTSCENE_CURIOUS_SRC,
-    nerd:      CUTSCENE_NERD_SRC,
-  };
-  const src = cutsceneMap[charName] || CUTSCENE_NERD_SRC;
-
-  const vid = document.createElement("video");
-  vid.src = src;
-  vid.style.display = "none";
-  vid.preload = "auto";
-  document.body.appendChild(vid);
-  cutsceneVideo = vid;
-  vid.play().catch(() => {});
-  vid.onended = () => {
-    S.screen = "level2splash";
-    vid.remove();
-    cutsceneVideo = null;
-    resumeMusic();
-  };
-}
-function startCutscene3() {
+// Creates a full-screen overlay video element — same approach as startIntroVideo.
+// Using a positioned overlay lets the browser GPU-composite the video directly
+// instead of copying each frame into the canvas (which is slow in fullscreen).
+function _makeCutsceneVid(src) {
   if (cutsceneVideo) { cutsceneVideo.pause(); cutsceneVideo.remove(); }
-  pauseMusic();
-  const charName = (S.char ? S.char.name : "NERD").toLowerCase();
-  const cutsceneMap = {
-    assassin:  CUTSCENE3_ASSASSIN_SRC,
-    bulldozer: CUTSCENE3_BULLDOZER_SRC,
-    curious:   CUTSCENE3_CURIOUS_SRC,
-    nerd:      CUTSCENE3_NERD_SRC,
-  };
-  const src = cutsceneMap[charName] || CUTSCENE3_NERD_SRC;
   const vid = document.createElement("video");
   vid.src = src;
-  vid.style.display = "none";
-  vid.preload = "auto";
+  vid.playsInline = true;
+  vid.style.position = "fixed";
+  vid.style.top    = "0";
+  vid.style.left   = "0";
+  vid.style.width  = "100%";
+  vid.style.height = "100%";
+  vid.style.objectFit = "contain";
+  vid.style.background = "#000";
+  vid.style.zIndex = "10";
   document.body.appendChild(vid);
   cutsceneVideo = vid;
-  const advance3 = () => { vid.remove(); cutsceneVideo = null; S.screen = "ending"; startEndingVideo(); };
-  vid.play().catch(() => advance3());
-  vid.onended = advance3;
-  vid.onerror = advance3;
+  return vid;
+}
+
+function startCutscene() {
+  pauseMusic();
+  const charName = (S.char ? S.char.name : "NERD").toLowerCase();
+  const map = { assassin: CUTSCENE_ASSASSIN_SRC, bulldozer: CUTSCENE_BULLDOZER_SRC, curious: CUTSCENE_CURIOUS_SRC, nerd: CUTSCENE_NERD_SRC };
+  const vid = _makeCutsceneVid(map[charName] || CUTSCENE_NERD_SRC);
+  vid.play().catch(() => {});
+  vid.onended = () => { vid.remove(); cutsceneVideo = null; S.screen = "level2splash"; resumeMusic(); };
+}
+
+function startCutscene2() {
+  pauseMusic();
+  const charName = (S.char ? S.char.name : "NERD").toLowerCase();
+  const map = { assassin: CUTSCENE2_ASSASSIN_SRC, bulldozer: CUTSCENE2_BULLDOZER_SRC, curious: CUTSCENE2_CURIOUS_SRC, nerd: CUTSCENE2_NERD_SRC };
+  const vid = _makeCutsceneVid(map[charName] || CUTSCENE2_NERD_SRC);
+  vid.play().catch(() => {});
+  vid.onended = () => { vid.remove(); cutsceneVideo = null; S.screen = "level3splash"; resumeMusic(); };
+}
+
+function startCutscene3() {
+  pauseMusic();
+  const charName = (S.char ? S.char.name : "NERD").toLowerCase();
+  const map = { assassin: CUTSCENE3_ASSASSIN_SRC, bulldozer: CUTSCENE3_BULLDOZER_SRC, curious: CUTSCENE3_CURIOUS_SRC, nerd: CUTSCENE3_NERD_SRC };
+  const vid = _makeCutsceneVid(map[charName] || CUTSCENE3_NERD_SRC);
+  const advance = () => { vid.remove(); cutsceneVideo = null; S.screen = "ending"; startEndingVideo(); };
+  vid.play().catch(() => advance());
+  vid.onended = advance;
+  vid.onerror = advance;
 }
 
 function startEndingVideo() {
-  if (cutsceneVideo) { cutsceneVideo.pause(); cutsceneVideo.remove(); }
   const charName = (S.char ? S.char.name : "NERD").toLowerCase();
-  const endingMap = {
-    assassin:  ENDING_ASSASSIN_SRC,
-    bulldozer: ENDING_BULLDOZER_SRC,
-    curious:   ENDING_CURIOUS_SRC,
-    nerd:      ENDING_NERD_SRC,
-  };
-  const src = endingMap[charName] || ENDING_NERD_SRC;
-  const vid = document.createElement("video");
-  vid.src = src;
-  vid.style.display = "none";
-  vid.preload = "auto";
-  document.body.appendChild(vid);
-  cutsceneVideo = vid;
+  const map = { assassin: ENDING_ASSASSIN_SRC, bulldozer: ENDING_BULLDOZER_SRC, curious: ENDING_CURIOUS_SRC, nerd: ENDING_NERD_SRC };
+  const vid = _makeCutsceneVid(map[charName] || ENDING_NERD_SRC);
   S.endingDone = false;
   vid.play().catch(() => {});
-  vid.onended = () => {
-    S.endingDone = true;
-  };
+  vid.onended = () => { S.endingDone = true; };
 }
 
 function drawCutscene() {
-  if (cutsceneVideo && cutsceneVideo.readyState >= 2) {
-    ctx.drawImage(cutsceneVideo, 0, 0, CFG.W, CFG.H);
-  } else {
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, CFG.W, CFG.H);
-    txt("LOADING...", CFG.W/2, CFG.H/2, '24px "ClaudiaShouter"', "#FFE000", "center", false);
-  }
+  // Video plays as a full-screen overlay element — canvas just needs to be black underneath.
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, CFG.W, CFG.H);
+  // "Press enter" prompt drawn on canvas on top of overlay for the ending screen.
   if (S.screen === "ending" && S.endingDone) {
     ctx.fillStyle = "rgba(0,0,0,0.55)";
     ctx.fillRect(0, 0, CFG.W, CFG.H);
