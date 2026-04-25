@@ -243,6 +243,28 @@ Object.entries(ASSETS).forEach(([name, src]) => {
   imgs[name] = img;
 });
 
+// ── VIDEO PRELOAD ────────────────────────────────────────────
+// Convert data URL videos to blob URLs in the background at page load.
+// Updates each global *_SRC variable in-place so startCutscene* functions
+// automatically pick up the fast blob URL instead of the raw base64 string.
+(function preloadVideos() {
+  const names = [
+    "INTRO_VIDEO_SRC",
+    "CUTSCENE_ASSASSIN_SRC","CUTSCENE_BULLDOZER_SRC","CUTSCENE_CURIOUS_SRC","CUTSCENE_NERD_SRC",
+    "CUTSCENE2_ASSASSIN_SRC","CUTSCENE2_BULLDOZER_SRC","CUTSCENE2_CURIOUS_SRC","CUTSCENE2_NERD_SRC",
+    "CUTSCENE3_ASSASSIN_SRC","CUTSCENE3_BULLDOZER_SRC","CUTSCENE3_CURIOUS_SRC","CUTSCENE3_NERD_SRC",
+    "ENDING_ASSASSIN_SRC","ENDING_BULLDOZER_SRC","ENDING_CURIOUS_SRC","ENDING_NERD_SRC"
+  ];
+  names.forEach(name => {
+    const src = window[name];
+    if (src && src.startsWith("data:")) {
+      fetch(src).then(r => r.blob()).then(b => {
+        window[name] = URL.createObjectURL(b);
+      }).catch(() => {});
+    }
+  });
+})();
+
 // ── AUDIO ────────────────────────────────────────────────────
 let audioCtx = null;
 const sfx = {};
