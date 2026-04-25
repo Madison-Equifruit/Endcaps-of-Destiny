@@ -148,30 +148,30 @@ canvas {{ display:block; image-rendering:pixelated; image-rendering:crisp-edges;
 <canvas id="c"></canvas>
 <script>
 document.fonts.load('20px "ClaudiaShouter"');
-const SFX_COLLECT  = "data:audio/wav;base64,{collect_b64}";
-const SFX_POWERUP  = "data:audio/wav;base64,{powerup_b64}";
-const SFX_HIT      = "data:audio/wav;base64,{hit_b64}";
-const SFX_JUMP     = "data:audio/wav;base64,{jump_b64}";
-const SFX_DEAD         = "data:audio/wav;base64,{dead_b64}";
-const LEADERBOARD_SRC  = "data:audio/mpeg;base64,{leaderboard_b64}";
-const INTRO_VIDEO_SRC         = "data:video/mp4;base64,{intro_b64}";
-const CUTSCENE_ASSASSIN_SRC   = "data:video/mp4;base64,{cs1_assassin}";
-const CUTSCENE_BULLDOZER_SRC  = "data:video/mp4;base64,{cs1_bulldozer}";
-const CUTSCENE_CURIOUS_SRC    = "data:video/mp4;base64,{cs1_curious}";
-const CUTSCENE_NERD_SRC       = "data:video/mp4;base64,{cs1_nerd}";
-const CUTSCENE2_ASSASSIN_SRC  = "data:video/mp4;base64,{cs2_assassin}";
-const CUTSCENE2_BULLDOZER_SRC = "data:video/mp4;base64,{cs2_bulldozer}";
-const CUTSCENE2_CURIOUS_SRC   = "data:video/mp4;base64,{cs2_curious}";
-const CUTSCENE2_NERD_SRC      = "data:video/mp4;base64,{cs2_nerd}";
-const CUTSCENE3_ASSASSIN_SRC  = "data:video/mp4;base64,{cs3_assassin}";
-const CUTSCENE3_BULLDOZER_SRC = "data:video/mp4;base64,{cs3_bulldozer}";
-const CUTSCENE3_CURIOUS_SRC   = "data:video/mp4;base64,{cs3_curious}";
-const CUTSCENE3_NERD_SRC      = "data:video/mp4;base64,{cs3_nerd}";
-const ENDING_ASSASSIN_SRC     = "data:video/mp4;base64,{end_assassin}";
-const ENDING_BULLDOZER_SRC    = "data:video/mp4;base64,{end_bulldozer}";
-const ENDING_CURIOUS_SRC      = "data:video/mp4;base64,{end_curious}";
-const ENDING_NERD_SRC         = "data:video/mp4;base64,{end_nerd}";
-const MUSIC_SRC = "data:video/mp4;base64,{music_b64}";
+var SFX_COLLECT  = "data:audio/wav;base64,{collect_b64}";
+var SFX_POWERUP  = "data:audio/wav;base64,{powerup_b64}";
+var SFX_HIT      = "data:audio/wav;base64,{hit_b64}";
+var SFX_JUMP     = "data:audio/wav;base64,{jump_b64}";
+var SFX_DEAD         = "data:audio/wav;base64,{dead_b64}";
+var LEADERBOARD_SRC  = "data:audio/mpeg;base64,{leaderboard_b64}";
+var INTRO_VIDEO_SRC         = "data:video/mp4;base64,{intro_b64}";
+var CUTSCENE_ASSASSIN_SRC   = "data:video/mp4;base64,{cs1_assassin}";
+var CUTSCENE_BULLDOZER_SRC  = "data:video/mp4;base64,{cs1_bulldozer}";
+var CUTSCENE_CURIOUS_SRC    = "data:video/mp4;base64,{cs1_curious}";
+var CUTSCENE_NERD_SRC       = "data:video/mp4;base64,{cs1_nerd}";
+var CUTSCENE2_ASSASSIN_SRC  = "data:video/mp4;base64,{cs2_assassin}";
+var CUTSCENE2_BULLDOZER_SRC = "data:video/mp4;base64,{cs2_bulldozer}";
+var CUTSCENE2_CURIOUS_SRC   = "data:video/mp4;base64,{cs2_curious}";
+var CUTSCENE2_NERD_SRC      = "data:video/mp4;base64,{cs2_nerd}";
+var CUTSCENE3_ASSASSIN_SRC  = "data:video/mp4;base64,{cs3_assassin}";
+var CUTSCENE3_BULLDOZER_SRC = "data:video/mp4;base64,{cs3_bulldozer}";
+var CUTSCENE3_CURIOUS_SRC   = "data:video/mp4;base64,{cs3_curious}";
+var CUTSCENE3_NERD_SRC      = "data:video/mp4;base64,{cs3_nerd}";
+var ENDING_ASSASSIN_SRC     = "data:video/mp4;base64,{end_assassin}";
+var ENDING_BULLDOZER_SRC    = "data:video/mp4;base64,{end_bulldozer}";
+var ENDING_CURIOUS_SRC      = "data:video/mp4;base64,{end_curious}";
+var ENDING_NERD_SRC         = "data:video/mp4;base64,{end_nerd}";
+var MUSIC_SRC = "data:video/mp4;base64,{music_b64}";
 {assets_js}
 {game_js}
 </script>
