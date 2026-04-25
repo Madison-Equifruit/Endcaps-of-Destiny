@@ -1380,32 +1380,6 @@ function drawCutscene() {
   }
 }
 
-function startCutscene2() {
-  if (cutsceneVideo) { cutsceneVideo.pause(); cutsceneVideo.remove(); }
-  pauseMusic();
-  const charName = (S.char ? S.char.name : "NERD").toLowerCase();
-  const cutsceneMap = {
-    assassin:  CUTSCENE2_ASSASSIN_SRC,
-    bulldozer: CUTSCENE2_BULLDOZER_SRC,
-    curious:   CUTSCENE2_CURIOUS_SRC,
-    nerd:      CUTSCENE2_NERD_SRC,
-  };
-  const src = cutsceneMap[charName] || CUTSCENE2_NERD_SRC;
-  const vid = document.createElement("video");
-  vid.src = src;
-  vid.style.display = "none";
-  vid.preload = "auto";
-  document.body.appendChild(vid);
-  cutsceneVideo = vid;
-  vid.play().catch(() => {});
-  vid.onended = () => {
-    S.screen = "level3splash";
-    vid.remove();
-    cutsceneVideo = null;
-    resumeMusic();
-  };
-}
-
 // ── INPUT ROUTING ─────────────────────────────────────────────
 function handleInput() {
   const ok = jp["Enter"] || (S.screen !== "play" && S.screen !== "name" && jp["Space"]);
