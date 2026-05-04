@@ -314,30 +314,31 @@ loadSfx("dead", SFX_DEAD);
 // ── MUSIC ─────────────────────────────────────────────────────
 let musicEl = null;
 
+// Pre-convert music data URL to a blob URL in the background at page load.
+// startMusic() must call vid.play() synchronously inside a user gesture —
+// if play() runs inside a .then() callback it loses the gesture context
+// and browsers block it via autoplay policy. Pre-loading the blob means
+// startMusic() can run entirely synchronously when the user clicks.
+let _musicBlobUrl = null;
+if (typeof MUSIC_SRC === "string" && MUSIC_SRC.startsWith("data:")) {
+  fetch(MUSIC_SRC).then(r => r.blob()).then(b => {
+    _musicBlobUrl = URL.createObjectURL(b);
+  }).catch(() => {});
+}
+
 function startMusic() {
   if (musicEl) return; // already playing
-  function _play(src) {
-    // Use a hidden <video> element — music.mp4 is a video/mp4 container so
-    // new Audio() rejects it in some browsers, but <video> handles it natively.
-    // The video/audio API (.pause/.play/.volume/.paused) is identical on both.
-    const vid = document.createElement("video");
-    vid.style.display = "none";
-    vid.src = src;
-    vid.loop = false;
-    vid.volume = 0.5;
-    document.body.appendChild(vid);
-    vid.play().catch(() => {});
-    musicEl = vid;
-  }
-  // Convert data URL to blob URL so the large base64 string isn't held in the src.
-  if (typeof MUSIC_SRC === "string" && MUSIC_SRC.startsWith("data:")) {
-    fetch(MUSIC_SRC)
-      .then(r => r.blob())
-      .then(b => _play(URL.createObjectURL(b)))
-      .catch(() => _play(MUSIC_SRC));
-  } else {
-    _play(MUSIC_SRC);
-  }
+  // Use pre-loaded blob URL if ready, otherwise original src.
+  // <video> element handles video/mp4 containers that new Audio() may reject.
+  const src = _musicBlobUrl || MUSIC_SRC;
+  const vid = document.createElement("video");
+  vid.style.display = "none";
+  vid.src = src;
+  vid.loop = false;
+  vid.volume = 0.5;
+  document.body.appendChild(vid);
+  vid.play().catch(() => {});
+  musicEl = vid;
 }
 
 function stopMusic() {
