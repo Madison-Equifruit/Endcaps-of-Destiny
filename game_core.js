@@ -323,16 +323,11 @@ _musicVid.preload = "auto";
 _musicVid.loop = false;
 _musicVid.volume = 0.5;
 document.body.appendChild(_musicVid);
-if (typeof MUSIC_SRC === "string" && MUSIC_SRC.startsWith("data:")) {
-  // Convert to blob first so the video element isn't given a 3MB src attribute
-  fetch(MUSIC_SRC).then(r => r.blob()).then(b => {
-    _musicVid.src = URL.createObjectURL(b);
-    _musicVid.load();
-  }).catch(() => { _musicVid.src = MUSIC_SRC; _musicVid.load(); });
-} else {
-  _musicVid.src = MUSIC_SRC;
-  _musicVid.load();
-}
+// Set src synchronously — a <video> element accepts data:video/mp4 directly.
+// No async blob conversion: if src isn't set before the first click,
+// play() fires on an empty element and produces silence.
+_musicVid.src = MUSIC_SRC;
+_musicVid.load();
 
 function startMusic() {
   if (musicEl) return; // already playing
