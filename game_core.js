@@ -421,16 +421,20 @@ function clearJP() { for(const k in jp) delete jp[k]; }
 
 // ── STATE ────────────────────────────────────────────────────
 let S = {};
-let LEADERBOARD = JSON.parse(localStorage.getItem("bb_leaderboard") || "[]");
-// Sync from server file on startup (persists across browser sessions)
-fetch("/api/leaderboard").then(r=>r.json()).then(serverData=>{
-  if(!Array.isArray(serverData)||serverData.length===0) return;
-  const merged=[...LEADERBOARD,...serverData];
-  const seen=new Set();
-  LEADERBOARD=merged.filter(e=>{const k=e.name+":"+e.score;return seen.has(k)?false:(seen.add(k),true);})
-    .sort((a,b)=>b.score-a.score).slice(0,10);
-  localStorage.setItem("bb_leaderboard",JSON.stringify(LEADERBOARD));
-}).catch(()=>{});
+const FIREBASE_URL = "https://banana-badass-leaderboard-default-rtdb.firebaseio.com";
+
+let LEADERBOARD = [];
+// Load leaderboard from Firebase on startup — works on all devices, persists forever
+fetch(FIREBASE_URL + "/leaderboard.json")
+  .then(r => r.json())
+  .then(data => {
+    if (Array.isArray(data) && data.length > 0) {
+      LEADERBOARD = data;
+    }
+  }).catch(() => {
+    // Fall back to localStorage if offline
+    LEADERBOARD = JSON.parse(localStorage.getItem("bb_leaderboard") || "[]");
+  });
 function initState() {
   S = {
     screen:"title", charIdx:0, char:null,
@@ -518,16 +522,32 @@ function resetLevel3() {
 function submitName() {
   const charName = S.char ? S.char.name : "BANANA";
   const name = S.nameInput.trim() || charName;
-  // Re-read from storage so a reset from the leaderboard page is respected
-  LEADERBOARD = JSON.parse(localStorage.getItem("bb_leaderboard") || "[]");
-  LEADERBOARD.push({name, score: Math.floor(S.score)});
-  LEADERBOARD.sort((a,b)=>b.score-a.score);
-  if (LEADERBOARD.length>10) LEADERBOARD=LEADERBOARD.slice(0,10);
-  localStorage.setItem("bb_leaderboard", JSON.stringify(LEADERBOARD));
-  fetch("/api/leaderboard",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(LEADERBOARD)}).catch(()=>{});
+  const newEntry = {name, score: Math.floor(S.score)};
+  // Fetch latest from Firebase, add new score, save back
+  fetch(FIREBASE_URL + "/leaderboard.json")
+    .then(r => r.json())
+    .then(data => {
+      const current = Array.isArray(data) ? data : [];
+      current.push(newEntry);
+      current.sort((a,b) => b.score - a.score);
+      const top = current.slice(0, 20);
+      LEADERBOARD = top;
+      localStorage.setItem("bb_leaderboard", JSON.stringify(top));
+      return fetch(FIREBASE_URL + "/leaderboard.json", {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(top)
+      });
+    }).catch(() => {
+      // Offline fallback — save locally only
+      LEADERBOARD.push(newEntry);
+      LEADERBOARD.sort((a,b) => b.score - a.score);
+      LEADERBOARD = LEADERBOARD.slice(0, 20);
+      localStorage.setItem("bb_leaderboard", JSON.stringify(LEADERBOARD));
+    });
   S.screen = "leaderboard";
   playLeaderboardMusic();
-  clearJP(); // prevent the Enter keypress from instantly skipping the leaderboard
+  clearJP();
 }
 
 // ── SPAWN ─────────────────────────────────────────────────────

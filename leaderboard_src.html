@@ -88,13 +88,18 @@ td.score-col { text-align: right; }
   <div id="empty" class="empty" style="display:none">NO SCORES YET — BE THE FIRST!</div>
 </div>
 <script>
+const FIREBASE_URL = "https://banana-badass-leaderboard-default-rtdb.firebaseio.com";
 const MEDALS = ["🥇","🥈","🥉"];
-function render() {
-  const data = JSON.parse(localStorage.getItem("bb_leaderboard") || "[]");
+let lastJson = null;
+
+function display(data) {
+  const json = JSON.stringify(data);
+  if (json === lastJson) return;
+  lastJson = json;
   const rows = document.getElementById("rows");
   const empty = document.getElementById("empty");
   rows.innerHTML = "";
-  if (data.length === 0) {
+  if (!data.length) {
     empty.style.display = "block";
   } else {
     empty.style.display = "none";
@@ -107,9 +112,21 @@ function render() {
     });
   }
 }
+
+function render() {
+  fetch(FIREBASE_URL + "/leaderboard.json")
+    .then(r => r.json())
+    .then(data => {
+      const list = Array.isArray(data) ? data : [];
+      localStorage.setItem("bb_leaderboard", JSON.stringify(list));
+      display(list);
+    })
+    .catch(() => display(JSON.parse(localStorage.getItem("bb_leaderboard") || "[]")));
+}
+
 render();
+setInterval(render, 3000);
 window.addEventListener("storage", e => { if (e.key === "bb_leaderboard") render(); });
-setInterval(render, 5000);
 </script>
 </body>
 </html>

@@ -135,21 +135,27 @@ function display(data) {
   }
 }
 
+const FIREBASE_URL = "https://banana-badass-leaderboard-default-rtdb.firebaseio.com";
+
 function render() {
-  fetch("/api/leaderboard")
+  fetch(FIREBASE_URL + "/leaderboard.json")
     .then(r => r.json())
-    .then(data => { localStorage.setItem("bb_leaderboard", JSON.stringify(data)); display(data); })
+    .then(data => {
+      const list = Array.isArray(data) ? data : [];
+      localStorage.setItem("bb_leaderboard", JSON.stringify(list));
+      display(list);
+    })
     .catch(() => display(JSON.parse(localStorage.getItem("bb_leaderboard") || "[]")));
 }
 
 render();
-setInterval(render, 1000);
+setInterval(render, 3000);
 window.addEventListener("storage", e => { if (e.key === "bb_leaderboard") render(); });
 
 document.getElementById("resetBtn").addEventListener("click", function(e) {
   if (e.detail === 0) return;
   if (!confirm("Reset the leaderboard? This cannot be undone.")) return;
-  fetch("/api/leaderboard", {method:"POST", headers:{"Content-Type":"application/json"}, body:"[]"})
+  fetch(FIREBASE_URL + "/leaderboard.json", {method:"PUT", headers:{"Content-Type":"application/json"}, body:"[]"})
     .catch(()=>{});
   localStorage.removeItem("bb_leaderboard");
   lastJson = null;
