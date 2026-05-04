@@ -57,7 +57,7 @@ hit_b64          = b64_audio("hit.wav")
 jump_b64         = b64_audio("jump.wav")
 dead_b64         = b64_audio("dead.wav")
 leaderboard_b64  = b64_audio("leaderboard.mp3")
-music_b64        = b64_video("music.mp4")
+music_b64        = b64_audio("music.mp4")
 
 # ── VIDEOS ────────────────────────────────────────────────────
 print("  Loading videos...")
