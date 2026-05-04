@@ -110,6 +110,8 @@ image_files = [
     "Fake_Cert.png",
     "Game_snapshot.png",
     "Apple_stand.png",
+    "cruiser_table.png",
+    "messy_desk.png",
 ]
 
 asset_lines = []
