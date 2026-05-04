@@ -317,21 +317,23 @@ let musicEl = null;
 function startMusic() {
   if (musicEl) return; // already playing
   function _play(src) {
-    const audio = new Audio(src);
-    audio.loop = false; // plays once start to finish
-    audio.volume = 0.5;
-    audio.play().catch(() => {});
-    musicEl = audio;
+    // Use a hidden <video> element — music.mp4 is a video/mp4 container so
+    // new Audio() rejects it in some browsers, but <video> handles it natively.
+    // The video/audio API (.pause/.play/.volume/.paused) is identical on both.
+    const vid = document.createElement("video");
+    vid.style.display = "none";
+    vid.src = src;
+    vid.loop = false;
+    vid.volume = 0.5;
+    document.body.appendChild(vid);
+    vid.play().catch(() => {});
+    musicEl = vid;
   }
-  // Convert data URLs to blob URLs for reliable large-media playback.
-  // Force audio/mp4 MIME type so new Audio() accepts it in all browsers.
+  // Convert data URL to blob URL so the large base64 string isn't held in the src.
   if (typeof MUSIC_SRC === "string" && MUSIC_SRC.startsWith("data:")) {
     fetch(MUSIC_SRC)
-      .then(r => r.arrayBuffer())
-      .then(buf => {
-        const blob = new Blob([buf], { type: "audio/mp4" });
-        _play(URL.createObjectURL(blob));
-      })
+      .then(r => r.blob())
+      .then(b => _play(URL.createObjectURL(b)))
       .catch(() => _play(MUSIC_SRC));
   } else {
     _play(MUSIC_SRC);
