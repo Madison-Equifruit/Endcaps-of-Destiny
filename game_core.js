@@ -323,9 +323,16 @@ function startMusic() {
     audio.play().catch(() => {});
     musicEl = audio;
   }
-  // Convert data URLs to blob URLs for reliable large-media playback
+  // Convert data URLs to blob URLs for reliable large-media playback.
+  // Force audio/mp4 MIME type so new Audio() accepts it in all browsers.
   if (typeof MUSIC_SRC === "string" && MUSIC_SRC.startsWith("data:")) {
-    fetch(MUSIC_SRC).then(r => r.blob()).then(b => _play(URL.createObjectURL(b))).catch(() => _play(MUSIC_SRC));
+    fetch(MUSIC_SRC)
+      .then(r => r.arrayBuffer())
+      .then(buf => {
+        const blob = new Blob([buf], { type: "audio/mp4" });
+        _play(URL.createObjectURL(blob));
+      })
+      .catch(() => _play(MUSIC_SRC));
   } else {
     _play(MUSIC_SRC);
   }
