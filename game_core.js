@@ -317,21 +317,11 @@ let musicEl = null;
 // Pre-create the music video element at page load and start buffering immediately.
 // By the time the user first clicks, the audio is already loaded so play() works
 // instantly and synchronously inside the gesture — no async gap, no autoplay block.
-const _musicVid = document.createElement("video");
-_musicVid.style.display = "none";
-_musicVid.preload = "auto";
-_musicVid.loop = false;
-_musicVid.volume = 0.5;
-document.body.appendChild(_musicVid);
-// Set src synchronously — a <video> element accepts data:video/mp4 directly.
-// No async blob conversion: if src isn't set before the first click,
-// play() fires on an empty element and produces silence.
-_musicVid.src = MUSIC_SRC;
-_musicVid.load();
-
 function startMusic() {
   if (musicEl) return; // already playing
-  musicEl = _musicVid;
+  musicEl = new Audio(MUSIC_SRC);
+  musicEl.loop = false;
+  musicEl.volume = 0.5;
   musicEl.play().catch(() => {});
 }
 

@@ -173,7 +173,7 @@ var ENDING_ASSASSIN_SRC     = "data:video/mp4;base64,{end_assassin}";
 var ENDING_BULLDOZER_SRC    = "data:video/mp4;base64,{end_bulldozer}";
 var ENDING_CURIOUS_SRC      = "data:video/mp4;base64,{end_curious}";
 var ENDING_NERD_SRC         = "data:video/mp4;base64,{end_nerd}";
-var MUSIC_SRC = "data:video/mp4;base64,{music_b64}";
+var MUSIC_SRC = "data:audio/mp4;base64,{music_b64}";
 {assets_js}
 {game_js}
 </script>
