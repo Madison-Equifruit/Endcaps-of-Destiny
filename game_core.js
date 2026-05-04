@@ -127,10 +127,10 @@ function gpNamePick() {
   if (!S || S.screen !== "name") return;
   if (S.gpNameRow === undefined) { S.gpNameRow = 0; S.gpNameCol = 0; }
   const ch = GP_GRID[S.gpNameRow][S.gpNameCol];
-  if      (ch === 'SPC')  { if (S.nameInput.length < 12) S.nameInput += ' '; }
+  if      (ch === 'SPC')  { if (S.nameInput.length < 25) S.nameInput += ' '; }
   else if (ch === 'DEL')  { S.nameInput = S.nameInput.slice(0, -1); }
   else if (ch === 'DONE') { submitName(); }
-  else if (S.nameInput.length < 12) { S.nameInput += ch; }
+  else if (S.nameInput.length < 25) { S.nameInput += ch; }
 }
 
 function pollGamepad() {
@@ -411,7 +411,7 @@ window.addEventListener("keydown", e => {
   if (S.screen === "name") {
     if (e.code === "Backspace") S.nameInput = S.nameInput.slice(0,-1);
     else if (e.code==="Enter") submitName();
-    else if (e.key.length===1 && S.nameInput.length<12) S.nameInput += e.key.toUpperCase();
+    else if (e.key.length===1 && S.nameInput.length<25) S.nameInput += e.key.toUpperCase();
     e.preventDefault();
   }
   if (["Space","ArrowUp","ArrowDown"].includes(e.code)) e.preventDefault();
