@@ -314,31 +314,30 @@ loadSfx("dead", SFX_DEAD);
 // ── MUSIC ─────────────────────────────────────────────────────
 let musicEl = null;
 
-// Pre-convert music data URL to a blob URL in the background at page load.
-// startMusic() must call vid.play() synchronously inside a user gesture —
-// if play() runs inside a .then() callback it loses the gesture context
-// and browsers block it via autoplay policy. Pre-loading the blob means
-// startMusic() can run entirely synchronously when the user clicks.
-let _musicBlobUrl = null;
+// Pre-create the music video element at page load and start buffering immediately.
+// By the time the user first clicks, the audio is already loaded so play() works
+// instantly and synchronously inside the gesture — no async gap, no autoplay block.
+const _musicVid = document.createElement("video");
+_musicVid.style.display = "none";
+_musicVid.preload = "auto";
+_musicVid.loop = false;
+_musicVid.volume = 0.5;
+document.body.appendChild(_musicVid);
 if (typeof MUSIC_SRC === "string" && MUSIC_SRC.startsWith("data:")) {
+  // Convert to blob first so the video element isn't given a 3MB src attribute
   fetch(MUSIC_SRC).then(r => r.blob()).then(b => {
-    _musicBlobUrl = URL.createObjectURL(b);
-  }).catch(() => {});
+    _musicVid.src = URL.createObjectURL(b);
+    _musicVid.load();
+  }).catch(() => { _musicVid.src = MUSIC_SRC; _musicVid.load(); });
+} else {
+  _musicVid.src = MUSIC_SRC;
+  _musicVid.load();
 }
 
 function startMusic() {
   if (musicEl) return; // already playing
-  // Use pre-loaded blob URL if ready, otherwise original src.
-  // <video> element handles video/mp4 containers that new Audio() may reject.
-  const src = _musicBlobUrl || MUSIC_SRC;
-  const vid = document.createElement("video");
-  vid.style.display = "none";
-  vid.src = src;
-  vid.loop = false;
-  vid.volume = 0.5;
-  document.body.appendChild(vid);
-  vid.play().catch(() => {});
-  musicEl = vid;
+  musicEl = _musicVid;
+  musicEl.play().catch(() => {});
 }
 
 function stopMusic() {
