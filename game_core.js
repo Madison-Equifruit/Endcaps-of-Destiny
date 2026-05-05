@@ -414,9 +414,19 @@ window.addEventListener("keydown", e => {
     else if (e.key.length===1 && S.nameInput.length<25) S.nameInput += e.key.toUpperCase();
     e.preventDefault();
   }
+  if (S.screen === "leaderboard") {
+    if (e.code === "ArrowDown") { S.lbScroll = (S.lbScroll||0) + 1; e.preventDefault(); }
+    if (e.code === "ArrowUp")   { S.lbScroll = Math.max(0,(S.lbScroll||0) - 1); e.preventDefault(); }
+  }
   if (["Space","ArrowUp","ArrowDown"].includes(e.code)) e.preventDefault();
 });
 window.addEventListener("keyup", e => { keys[e.code] = false; });
+window.addEventListener("wheel", e => {
+  if (S.screen === "leaderboard") {
+    S.lbScroll = Math.max(0, (S.lbScroll||0) + (e.deltaY > 0 ? 1 : -1));
+    e.preventDefault();
+  }
+}, {passive: false});
 function clearJP() { for(const k in jp) delete jp[k]; }
 
 // ── STATE ────────────────────────────────────────────────────
@@ -443,7 +453,7 @@ function initState() {
     objects:[], popups:[],
     caseT:0, obstT:0, powerT:0,
     frame:0, glow:0, hit:0,
-    result:null, nameInput:"",
+    result:null, nameInput:"", lbScroll:0,
   };
 }
 initState();
@@ -530,22 +540,21 @@ function submitName() {
       const current = Array.isArray(data) ? data : [];
       current.push(newEntry);
       current.sort((a,b) => b.score - a.score);
-      const top = current.slice(0, 20);
-      LEADERBOARD = top;
-      localStorage.setItem("bb_leaderboard", JSON.stringify(top));
+      LEADERBOARD = current;
+      localStorage.setItem("bb_leaderboard", JSON.stringify(current));
       return fetch(FIREBASE_URL + "/leaderboard.json", {
         method: "PUT",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(top)
+        body: JSON.stringify(current)
       });
     }).catch(() => {
       // Offline fallback — save locally only
       LEADERBOARD.push(newEntry);
       LEADERBOARD.sort((a,b) => b.score - a.score);
-      LEADERBOARD = LEADERBOARD.slice(0, 20);
       localStorage.setItem("bb_leaderboard", JSON.stringify(LEADERBOARD));
     });
   S.screen = "leaderboard";
+  S.lbScroll = 0;
   playLeaderboardMusic();
   clearJP();
 }
@@ -1172,6 +1181,12 @@ function drawLeaderboard() {
   txt("🏆  HALL OF BANANA BADASSES  🏆",CFG.W/2,56,'bold 30px "ClaudiaShouter"',"#FFE000","center");
 
   const px=CFG.W/2-240, pw=480;
+  const rowH=30, contentTop=120, firstRow=142, contentBottom=448;
+  const visRows=Math.floor((contentBottom-firstRow)/rowH); // 10 rows
+  const maxScroll=Math.max(0, LEADERBOARD.length-visRows);
+  if(!S.lbScroll) S.lbScroll=0;
+  S.lbScroll=Math.max(0,Math.min(S.lbScroll,maxScroll));
+
   panel(px,72,pw,378);
 
   ctx.font='bold 15px "ClaudiaShouter"'; ctx.textAlign="left"; ctx.fillStyle="#666";
@@ -1180,16 +1195,29 @@ function drawLeaderboard() {
   ctx.strokeStyle="#444"; ctx.lineWidth=1;
   ctx.beginPath();ctx.moveTo(px+10,115);ctx.lineTo(px+pw-10,115);ctx.stroke();
 
-  LEADERBOARD.forEach((e,i)=>{
-    const ey=142+i*30;
-    const col=i===0?"#FFE000":i<3?"#FFA040":"#CCC";
-    const medal=i===0?"🥇 ":i===1?"🥈 ":i===2?"🥉 ":" "+(i+1)+".";
+  // Clipped scrollable row area
+  ctx.save();
+  ctx.beginPath(); ctx.rect(px, contentTop, pw, contentBottom-contentTop); ctx.clip();
+  LEADERBOARD.slice(S.lbScroll, S.lbScroll+visRows).forEach((e,i)=>{
+    const idx=i+S.lbScroll;
+    const ey=firstRow+i*rowH;
+    const col=idx===0?"#FFE000":idx<3?"#FFA040":"#CCC";
+    const medal=idx===0?"🥇 ":idx===1?"🥈 ":idx===2?"🥉 ":" "+(idx+1)+".";
     ctx.font='bold 15px "ClaudiaShouter"'; ctx.fillStyle=col; ctx.textAlign="left";
     ctx.fillText(medal, px+16, ey);
     ctx.fillText(e.name, px+100, ey);
     ctx.textAlign="right"; ctx.fillText(e.score, px+pw-16, ey); ctx.textAlign="left";
   });
+  ctx.restore();
+
   if(!LEADERBOARD.length){txt("NO SCORES YET — BE THE FIRST!",CFG.W/2,270,'bold 17px "ClaudiaShouter"',"#444","center",false);}
+
+  // Scroll hints
+  if(S.lbScroll>0)
+    txt("▲ MORE ABOVE",CFG.W/2,contentTop+6,'bold 11px "ClaudiaShouter"',"#555","center",false);
+  if(S.lbScroll<maxScroll)
+    txt("▼ SCROLL FOR MORE  ("+(LEADERBOARD.length-visRows-S.lbScroll)+" more)",
+        CFG.W/2,contentBottom+12,'bold 11px "ClaudiaShouter"',"#888","center",false);
 
   btn("PLAY AGAIN",CFG.W/2-85,470,170,46);
 }
